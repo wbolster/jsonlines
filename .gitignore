@@ -1,0 +1,13 @@
+# Python cruft
+*.py[co]
+__pycache__/
+
+# Testing
+/.coverage
+/.tox/
+/htmlcov/
+
+# Packaging
+/.cache/
+/*.egg-info/
+/dist/
