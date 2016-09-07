@@ -36,6 +36,16 @@ def test_invalid_lines():
     assert exc.value == s
 
 
+def test_typed_reads():
+    r = jsonlines.Reader(io.StringIO('12\n"foo"'))
+    assert r.read_int() == 12
+    with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+        r.read_int()
+    exc = excinfo.value
+    assert "does not match requested type" in str(exc)
+    assert exc.value == "foo"
+
+
 # TODO: jsonlines.open() in a tmpdir
 
 

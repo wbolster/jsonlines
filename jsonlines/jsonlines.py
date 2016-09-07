@@ -72,7 +72,72 @@ class Reader(ReaderWriterBase):
         self._line_iter = iter(text_fp)
 
     def read(self):
+        """Read a single line."""
         return next(self)
+
+    def read_string(self, allow_none=False):
+        """Read a single line containing a string."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, six.text_type):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_int(self, allow_none=False):
+        """Read a single line containing an integer."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if isinstance(value, bool) or not isinstance(value, six.integer_types):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_float(self, allow_none=False):
+        """Read a single line containing a float."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, float):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_number(self, allow_none=False):
+        """Read a single line containing a number."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if isinstance(value, bool) or not isinstance(
+                value, six.integer_types + (float,)):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_bool(self, allow_none=False):
+        """Read a single line containing a boolean."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, bool):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_dict(self, allow_none=False):
+        """Read a single line containing a dict (JSON object)."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, dict):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
+
+    def read_list(self, allow_none=False):
+        """Read a single line containing a list (JSON array)."""
+        value = self.read()
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, (tuple, list)):
+            raise InvalidLineError("line does not match requested type", value)
+        return value
 
     def __iter__(self):
         return self
