@@ -78,8 +78,9 @@ class Reader(ReaderWriterBase):
         try:
             value = json.loads(line)
         except ValueError as exc:
-            raise InvalidLineError(
-                "invalid json: {}".format(exc), line) from exc
+            six.raise_from(
+                InvalidLineError("invalid json: {}".format(exc), line),
+                exc)
         return value
 
     def read_string(self, allow_none=False):
