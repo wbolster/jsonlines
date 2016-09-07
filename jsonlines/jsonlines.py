@@ -77,7 +77,7 @@ class Reader(ReaderWriterBase):
         assert isinstance(line, six.text_type)
         try:
             value = json.loads(line)
-        except json.JSONDecodeError as exc:
+        except ValueError as exc:
             raise InvalidLineError(
                 "invalid json: {}".format(exc), line) from exc
         return value
