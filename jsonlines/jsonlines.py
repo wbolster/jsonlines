@@ -73,7 +73,14 @@ class Reader(ReaderWriterBase):
 
     def read(self):
         """Read a single line."""
-        return next(self)
+        line = next(self._line_iter)
+        assert isinstance(line, six.text_type)
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise InvalidLineError(
+                "invalid json: {}".format(exc), line) from exc
+        return value
 
     def read_string(self, allow_none=False):
         """Read a single line containing a string."""
@@ -143,14 +150,7 @@ class Reader(ReaderWriterBase):
         return self
 
     def __next__(self):
-        line = next(self._line_iter)
-        assert isinstance(line, six.text_type)
-        try:
-            value = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise InvalidLineError(
-                "invalid json: {}".format(exc), line) from exc
-        return value
+        return self.read()
 
     if six.PY2:  # pragma: no cover
         next = __next__
