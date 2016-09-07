@@ -27,20 +27,20 @@ def test_writer():
 
 
 def test_invalid_lines():
-    s = '[1, 2'
-    r = jsonlines.Reader(io.StringIO(s))
+    data = u'[1, 2'
+    reader = jsonlines.Reader(io.StringIO(data))
     with pytest.raises(jsonlines.InvalidLineError) as excinfo:
-        r.read()
+        reader.read()
     exc = excinfo.value
     assert str(exc).startswith("invalid json")
-    assert exc.value == s
+    assert exc.value == data
 
 
 def test_typed_reads():
-    r = jsonlines.Reader(io.StringIO('12\n"foo"'))
-    assert r.read_int() == 12
+    reader = jsonlines.Reader(io.StringIO(u'12\n"foo"'))
+    assert reader.read_int() == 12
     with pytest.raises(jsonlines.InvalidLineError) as excinfo:
-        r.read_int()
+        reader.read_int()
     exc = excinfo.value
     assert "does not match requested type" in str(exc)
     assert exc.value == "foo"
