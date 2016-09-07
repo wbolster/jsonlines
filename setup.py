@@ -15,6 +15,7 @@ setup(
     author_email="uws@xs4all.nl",
     url="https://github.com/wbolster/jsonlines",
     packages=['jsonlines'],
+    install_requires=['six'],
     license='BSD',
     classifiers=[],  # TODO
 )
