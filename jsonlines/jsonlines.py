@@ -77,6 +77,9 @@ class Reader(ReaderWriterBase):
 
         self._line_iter = iter(text_fp)
 
+    def read(self):
+        return next(self)
+
     def __iter__(self):
         return self
 
