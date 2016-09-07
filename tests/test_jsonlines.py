@@ -21,8 +21,8 @@ def test_reader():
 def test_writer():
     fp = io.BytesIO()
     writer = jsonlines.Writer(fp)
-    writer.dump({'a': 1})
-    writer.dump({'b': 2})
+    writer.write({'a': 1})
+    writer.write({'b': 2})
     assert fp.getvalue() == SAMPLE_BYTES
 
 

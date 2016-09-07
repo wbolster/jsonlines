@@ -92,7 +92,7 @@ class Writer(ReaderWriterBase):
             self._text_fp = fp
             self._fp_accepts_bytes = False
 
-    def dump(self, obj):
+    def write(self, obj):
         line = json.dumps(obj, ensure_ascii=False)
 
         # On Python 2, the JSON module has the nasty habit of returning
