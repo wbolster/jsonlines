@@ -1,17 +1,8 @@
 
 import io
 import json
-import sys
 
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-
-if PY2:
-    BYTES_TYPE = str
-    TEXT_TYPE = unicode  # noqa: 'unicode' doesn't exist in py3
-else:
-    BYTES_TYPE = bytes
-    TEXT_TYPE = str
+import six
 
 
 class NonClosingTextIOWrapper(io.TextIOWrapper):
@@ -70,7 +61,7 @@ class Reader(ReaderWriterBase):
         super(Reader, self).__init__(fp)
 
         # Make sure the file-like object returns unicode strings.
-        if isinstance(fp.read(0), TEXT_TYPE):
+        if isinstance(fp.read(0), six.text_type):
             text_fp = fp
         else:
             text_fp = make_text_fp(fp)
@@ -85,7 +76,7 @@ class Reader(ReaderWriterBase):
 
     def __next__(self):
         line = next(self._line_iter)
-        assert isinstance(line, TEXT_TYPE)
+        assert isinstance(line, six.text_type)
         try:
             value = json.loads(line)
         except json.JSONDecodeError as exc:
@@ -93,7 +84,7 @@ class Reader(ReaderWriterBase):
                 "invalid json: {}".format(exc), line) from exc
         return value
 
-    if PY2:  # pragma: no cover
+    if six.PY2:  # pragma: no cover
         next = __next__
 
 
@@ -106,10 +97,10 @@ class Writer(ReaderWriterBase):
             fp.write(u'')
         except TypeError:
             self._text_fp = make_text_fp(fp)
-            self._fp_accepts_bytes = True
+            self._fp_binary = True
         else:
             self._text_fp = fp
-            self._fp_accepts_bytes = False
+            self._fp_binary = False
 
     def write(self, obj):
         line = json.dumps(obj, ensure_ascii=False)
@@ -120,13 +111,13 @@ class Writer(ReaderWriterBase):
         # However, io.TextIOWrapper only accepts unicode strings. To
         # avoid useless encode/decode overhead, write directly to
         # self_fp in case it was a binary stream to start with.
-        if PY2 and self._fp_accepts_bytes and isinstance(line, BYTES_TYPE):
+        if six.PY2 and self._fp_binary and isinstance(line, six.binary_type):
             self._fp.write(line)
             self._fp.write(b"\n")
             return
 
         # In all other cases, we simply write the unicode string to the file.
-        assert isinstance(line, TEXT_TYPE)
+        assert isinstance(line, six.text_type)
         self._text_fp.write(line)
         self._text_fp.write(u"\n")
 
