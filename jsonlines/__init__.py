@@ -1,9 +1,8 @@
+"""
+Module for the jsonlines data format.
+"""
 
-__version__ = '0.0.1'
-__version_info__ = tuple(map(int, __version__.split('.')))
-
-
-# Import public API
+# expose only public api
 from .jsonlines import (  # noqa
     Reader,
     Writer,

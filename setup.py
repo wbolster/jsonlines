@@ -1,14 +1,13 @@
 import os
 from setuptools import setup
 
-import jsonlines
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fp:
     long_description = fp.read()
 
 setup(
     name="jsonlines",
-    version=jsonlines.__version__,
+    version="0.0.2",
     description="Library with helpers for the jsonlines file format",
     long_description=long_description,
     author="Wouter Bolsterlee",
