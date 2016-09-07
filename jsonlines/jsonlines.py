@@ -26,6 +26,18 @@ def make_text_fp(fp):
     return NonClosingTextIOWrapper(fp, encoding='UTF-8', line_buffering=True)
 
 
+class Error(Exception):
+    """Base error class."""
+    pass
+
+
+class InvalidLineError(Error):
+    """Error raised when an invalid line is encountered."""
+    def __init__(self, msg, value):
+        self.value = value
+        super(InvalidLineError, self).__init__(msg)
+
+
 class ReaderWriterBase(object):
 
     def __init__(self, fp):

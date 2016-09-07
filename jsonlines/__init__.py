@@ -8,4 +8,6 @@ from .jsonlines import (  # noqa
     Reader,
     Writer,
     open,
+    Error,
+    InvalidLineError,
 )
