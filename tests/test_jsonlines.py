@@ -26,6 +26,16 @@ def test_writer():
     assert fp.getvalue() == SAMPLE_BYTES
 
 
+def test_invalid_lines():
+    s = '[1, 2'
+    r = jsonlines.Reader(io.StringIO(s))
+    with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+        r.read()
+    exc = excinfo.value
+    assert str(exc).startswith("invalid json")
+    assert exc.value == s
+
+
 # TODO: jsonlines.open() in a tmpdir
 
 

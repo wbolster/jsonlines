@@ -86,7 +86,11 @@ class Reader(ReaderWriterBase):
     def __next__(self):
         line = next(self._line_iter)
         assert isinstance(line, TEXT_TYPE)
-        value = json.loads(line)
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise InvalidLineError(
+                "invalid json: {}".format(exc), line) from exc
         return value
 
     if PY2:  # pragma: no cover
