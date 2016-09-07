@@ -1,3 +1,6 @@
+"""
+jsonlines implementation
+"""
 
 import io
 import json
