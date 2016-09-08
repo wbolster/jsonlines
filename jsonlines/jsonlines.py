@@ -17,7 +17,7 @@ class NonClosingTextIOWrapper(io.TextIOWrapper):
 
 
 def make_text_fp(fp):
-    return NonClosingTextIOWrapper(fp, encoding='UTF-8', line_buffering=True)
+    return NonClosingTextIOWrapper(fp, encoding='UTF-8')
 
 
 class Error(Exception):
