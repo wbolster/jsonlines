@@ -182,7 +182,7 @@ class Reader(ReaderWriterBase):
             raise InvalidLineError("line does not match requested type", value)
         return value
 
-    def iter(self, type=None, allow_none=False):
+    def iter(self, type=None, allow_none=False, skip_invalid=False):
         """
         Iterate over all lines.
 
@@ -221,8 +221,15 @@ class Reader(ReaderWriterBase):
         if allow_none is None:
             allow_none = (type is None)
         try:
-            while True:
-                yield read(allow_none=allow_none)
+            if skip_invalid:
+                while True:
+                    try:
+                        yield read(allow_none=allow_none)
+                    except InvalidLineError:
+                        pass
+            else:
+                while True:
+                    yield read(allow_none=allow_none)
         except EOFError:
             pass
 

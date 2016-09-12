@@ -38,6 +38,14 @@ def test_invalid_lines():
         assert exc.value == data
 
 
+def test_skip_invalid():
+    fp = io.StringIO(u"12\ninvalid\n34")
+    reader = jsonlines.Reader(fp)
+    it = reader.iter(skip_invalid=True)
+    assert next(it) == 12
+    assert next(it) == 34
+
+
 def test_typed_reads():
     with jsonlines.Reader(io.StringIO(u'12\n"foo"')) as reader:
         assert reader.read_int() == 12
