@@ -13,11 +13,21 @@ class NonClosingTextIOWrapper(io.TextIOWrapper):
     Text IO wrapper subclass that doesn't close the underlying stream.
     """
     def __del__(self):
-        pass
+        try:
+            self.detach()
+        except Exception:
+            pass
+
+    def close(self):
+        # Override TextIOWrapper.close() since it will also
+        # unconditionally .close() the underlying stream, which we do
+        # not want.
+        self.flush()
+        self.detach()
 
 
 def make_text_fp(fp):
-    return NonClosingTextIOWrapper(fp, encoding='UTF-8')
+    return NonClosingTextIOWrapper(fp, encoding='utf-8')
 
 
 class Error(Exception):
