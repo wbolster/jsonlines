@@ -50,7 +50,6 @@ def test_typed_reads():
 
 
 def test_invalid_mode():
-
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError) as excinfo:
         jsonlines.open('foo', mode='foo')
-    assert 'mode' in str(exc.value)
+    assert 'mode' in str(excinfo.value)
