@@ -2,6 +2,7 @@
 jsonlines implementation
 """
 
+import abc
 import numbers
 import io
 import json
@@ -37,6 +38,14 @@ class Error(Exception):
     pass
 
 
+class InvalidJsonArguments(Error):
+    """
+    Error raised when a pass-through argument to the JSON decoder/encoder is
+    not supported by the jsonl format.
+    """
+    pass
+
+
 class InvalidLineError(Error):
     """
     Error raised when an invalid line is encountered.
@@ -58,10 +67,23 @@ class ReaderWriterBase(object):
     #: Whether this reader/writer is closed.
     closed = False
 
-    def __init__(self, fp):
+    def __init__(self, fp, **json_kwargs):
+        self._validate_json_kwargs(**json_kwargs)
+
         self._fp = self._text_fp = fp
         self._should_close_fp = False
+        self._json_kwargs = json_kwargs
         self.closed = False
+
+    @abc.abstractmethod
+    def _validate_json_kwargs(self, **json_kwargs):
+        """
+        Validate that the pass-through arguments to the JSON decoder or encoder
+        are supported by the jsonl format.
+
+        :raises: InvalidJsonArguments if one of the arguments is invalid
+        """
+        raise NotImplementedError
 
     def close(self):
         """
@@ -96,12 +118,15 @@ class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
     """
-    def __init__(self, fp):
-        super(Reader, self).__init__(fp)
+    def __init__(self, fp, **json_kwargs):
+        super(Reader, self).__init__(fp, **json_kwargs)
         if isinstance(fp.read(0), six.text_type):
             self._text_fp = fp
         else:
             self._text_fp = make_text_fp(fp)
+
+    def _validate_json_kwargs(self, **json_kwargs):
+        pass
 
     def read(self, allow_none=True):
         """Read a single line."""
@@ -110,7 +135,7 @@ class Reader(ReaderWriterBase):
             raise EOFError
         assert isinstance(line, six.text_type)
         try:
-            value = json.loads(line)
+            value = json.loads(line, **self._json_kwargs)
         except ValueError as exc:
             six.raise_from(
                 InvalidLineError("invalid json: {}".format(exc), line),
@@ -241,8 +266,8 @@ class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
     """
-    def __init__(self, fp, flush=False):
-        super(Writer, self).__init__(fp)
+    def __init__(self, fp, flush=False, **json_kwargs):
+        super(Writer, self).__init__(fp, **json_kwargs)
         self._flush = flush
         try:
             fp.write(u'')
@@ -253,8 +278,18 @@ class Writer(ReaderWriterBase):
             self._text_fp = fp
             self._fp_is_binary = False
 
+    def _validate_json_kwargs(self, **json_kwargs):
+        indent = json_kwargs.get('indent')
+        if indent is not None:
+            raise InvalidJsonArguments('indent argument not supported')
+
+        separators = json_kwargs.get('separators', [])
+        if any('\n' in separator for separator in separators):
+            raise InvalidJsonArguments('newlines in separators not supported')
+
     def write(self, obj):
-        line = json.dumps(obj, ensure_ascii=False)
+        self._json_kwargs.setdefault('ensure_ascii', False)
+        line = json.dumps(obj, **self._json_kwargs)
         written = False
         if six.PY2 and isinstance(line, six.binary_type):
             # On Python 2, the JSON module has the nasty habit of
@@ -279,13 +314,17 @@ class Writer(ReaderWriterBase):
             self._text_fp.flush()
 
 
-def open(name, mode='r', flush=False):
+def open(name, mode='r', flush=False, **json_kwargs):
+    """
+    :param json_kwargs: pass-through arguments to the json module
+
+    """
     if mode not in {'r', 'w'}:
         raise ValueError("'mode' must be either 'r' or 'w'")
     fp = io.open(name, mode=mode + 't', encoding='utf-8')
     if mode == 'r':
-        instance = Reader(fp)
+        instance = Reader(fp, **json_kwargs)
     else:
-        instance = Writer(fp, flush=flush)
+        instance = Writer(fp, flush=flush, **json_kwargs)
     instance._should_close_fp = True
     return instance

@@ -9,4 +9,5 @@ from .jsonlines import (  # noqa
     open,
     Error,
     InvalidLineError,
+    InvalidJsonArguments,
 )

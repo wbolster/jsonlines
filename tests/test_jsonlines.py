@@ -28,6 +28,22 @@ def test_writer():
     assert fp.getvalue() == SAMPLE_BYTES
 
 
+def test_writer_json_kwargs():
+    fp = io.BytesIO()
+    with jsonlines.Writer(fp, sort_keys=True, separators=(',', ':')) as writer:
+        writer.write({'b': 2, 'a': 1})
+        writer.write({'c': 3, 'd': 4})
+    assert fp.getvalue() == b'{"a":1,"b":2}\n{"c":3,"d":4}\n'
+
+
+def test_writer_json_kwargs_invalid():
+    with pytest.raises(jsonlines.InvalidJsonArguments):
+        jsonlines.Writer(io.BytesIO(), indent=2)
+
+    with pytest.raises(jsonlines.InvalidJsonArguments):
+        jsonlines.Writer(io.BytesIO(), separators=(',\n', ':'))
+
+
 def test_invalid_lines():
     data = u'[1, 2'
     with jsonlines.Reader(io.StringIO(data)) as reader:
