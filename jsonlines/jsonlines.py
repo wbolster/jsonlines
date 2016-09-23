@@ -101,12 +101,20 @@ class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
 
+    The `loads` argument can be used to replace the standard json
+    decoder. If specified, it must be a callable that accepts a
+    (unicode) string and returns the decoded object.
+
     Instances are iterable and can be used as a context manager.
 
     :param file-like fp: writable file-like object
+    :param callable loads: custom json decoder callable
     """
-    def __init__(self, fp):
+    def __init__(self, fp, loads=None):
         super(Reader, self).__init__(fp)
+        if loads is None:
+            loads = json.loads
+        self._loads = loads
         self._lineno = 0
         if not isinstance(fp.read(0), six.text_type):
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
@@ -135,7 +143,7 @@ class Reader(ReaderWriterBase):
         self._lineno += 1
 
         try:
-            value = json.loads(line)
+            value = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
                 "invalid json: {}".format(orig_exc), line, self._lineno)
