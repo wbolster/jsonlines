@@ -9,9 +9,20 @@ import json
 import six
 
 
+TYPE_MAPPING = {
+    dict: dict,
+    list: list,
+    str: six.text_type,
+    int: six.integer_types,
+    float: float,
+    numbers.Number: numbers.Number,
+    bool: bool,
+}
+
+
 class NonClosingTextIOWrapper(io.TextIOWrapper):
     """
-    Text IO wrapper subclass that doesn't close the underlying stream.
+    Text IO wrapper that does not close the underlying stream.
     """
     def __del__(self):
         try:
@@ -21,15 +32,8 @@ class NonClosingTextIOWrapper(io.TextIOWrapper):
             pass
 
     def close(self):
-        # Override TextIOWrapper.close() since it will also
-        # unconditionally .close() the underlying stream, which we do
-        # not want.
         self.flush()
         self.detach()
-
-
-def make_text_fp(fp):
-    return NonClosingTextIOWrapper(fp, encoding='utf-8')
 
 
 class Error(Exception):
@@ -37,7 +41,7 @@ class Error(Exception):
     pass
 
 
-class InvalidLineError(Error):
+class InvalidLineError(Error, ValueError):
     """
     Error raised when an invalid line is encountered.
 
@@ -45,8 +49,9 @@ class InvalidLineError(Error):
     specific data type has been requested, and the line contained a
     different data type.
     """
-    def __init__(self, msg, value):
-        self.value = value
+    def __init__(self, msg, line, lineno):
+        self.line = line.rstrip()
+        self.lineno = lineno
         super(InvalidLineError, self).__init__(msg)
 
 
@@ -95,151 +100,102 @@ class ReaderWriterBase(object):
 class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
+
+    Instances are iterable and can be used as a context manager.
+
+    :param file-like fp: writable file-like object
     """
     def __init__(self, fp):
         super(Reader, self).__init__(fp)
-        if isinstance(fp.read(0), six.text_type):
-            self._text_fp = fp
-        else:
-            self._text_fp = make_text_fp(fp)
+        self._lineno = 0
+        if not isinstance(fp.read(0), six.text_type):
+            self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
 
-    def read(self, allow_none=True):
-        """Read a single line."""
+    def read(self, type=None, allow_none=False, skip_invalid=False):
+        """
+        Read and decode a line from the underlying file-like object.
+
+        The optional `type` argument specifies the expected data type.
+        Supported types are ``dict``, ``list``, ``str``, ``int``,
+        ``float``, ``numbers.Number`` (accepts both integers and
+        floats), and ``bool``. When specified, non-conforming lines
+        result in :py:exc:`InvalidLineError`.
+
+        By default, input lines containing ``null`` (in JSON) are
+        considered invalid, and will cause :py:exc:`InvalidLineError`.
+        The `allow_none` argument can be used to change this behaviour,
+        in which case ``None`` will be returned instead.
+        """
+        if type is not None and type not in TYPE_MAPPING:
+            raise ValueError("invalid type specified")
+
         line = self._text_fp.readline()
         if not line:
             raise EOFError
-        assert isinstance(line, six.text_type)
+        self._lineno += 1
+
         try:
             value = json.loads(line)
-        except ValueError as exc:
-            six.raise_from(
-                InvalidLineError("invalid json: {}".format(exc), line),
-                exc)
-        if value is None and not allow_none:
-            raise InvalidLineError("line contained null value", line)
-        return value
+        except ValueError as orig_exc:
+            exc = InvalidLineError(
+                "invalid json: {}".format(orig_exc), line, self._lineno)
+            six.raise_from(exc, orig_exc)
 
-    def read_dict(self, allow_none=False):
-        """Read a single line containing a dict (JSON object)."""
-        value = self.read(allow_none=allow_none)
         if value is None:
-            return None
-        if not isinstance(value, dict):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
+            if allow_none:
+                return None
+            raise InvalidLineError(
+                "line contains null value", line, self._lineno)
 
-    def read_list(self, allow_none=False):
-        """Read a single line containing a list (JSON array)."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if not isinstance(value, (tuple, list)):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
+        if type is not None:
+            valid = isinstance(value, TYPE_MAPPING[type])
+            if type in (int, numbers.Number):
+                valid = valid and not isinstance(value, bool)
+            if not valid:
+                raise InvalidLineError(
+                    "line does not match requested type", line, self._lineno)
 
-    def read_string(self, allow_none=False):
-        """Read a single line containing a string."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if not isinstance(value, six.text_type):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
-
-    def read_int(self, allow_none=False):
-        """Read a single line containing an integer."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if isinstance(value, bool) or not isinstance(value, six.integer_types):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
-
-    def read_float(self, allow_none=False):
-        """Read a single line containing a float."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if not isinstance(value, float):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
-
-    def read_number(self, allow_none=False):
-        """Read a single line containing a number."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if isinstance(value, bool) or not isinstance(value, numbers.Number):
-            raise InvalidLineError("line does not match requested type", value)
-        return value
-
-    def read_bool(self, allow_none=False):
-        """Read a single line containing a boolean."""
-        value = self.read(allow_none=allow_none)
-        if value is None:
-            return None
-        if not isinstance(value, bool):
-            raise InvalidLineError("line does not match requested type", value)
         return value
 
     def iter(self, type=None, allow_none=False, skip_invalid=False):
         """
         Iterate over all lines.
 
-        If no arguments are specified, this is the same as directly
-        iterating over this ``Reader`` instance.
+        This is the iterator equivalent to repeatedly calling
+        :py:meth:`~Reader.read()`. If no arguments are specified, this
+        is the same as directly iterating over this :py:class:`Reader`
+        instance.
 
-        When specified, the `type` argument specifies the expected data
-        types produced by the underlying file-like object. This is
-        equivalent to repeatedly calling ``reader.read_xyz()``, e.g.
-        :py:meth:`~Reader.read_int()`. Supported types are ``dict``,
-        ``list``, ``str``, ``int``, ``float``, ``numbers.Number``, or
-        ``bool``.
-
-        The `allow_none` argument specifies whether ``None`` (``null``
-        in JSON) is considered a valid value. If omitted, iteration will
-        only yield ``None`` values if no type is specified.
+        See :py:meth:`~Reader.read()` for a description of the `type`
+        and `allow_none` arguments. When `skip_invalid` is set to
+        ``True``, invalid lines will be silently ignored.
         """
-        if type is None:
-            read = self.read
-        elif type is dict:
-            read = self.read_dict
-        elif type is list:
-            read = self.read_list
-        elif type is str:
-            read = self.read_string
-        elif type is int:
-            read = self.read_int
-        elif type is float:
-            read = self.read_float
-        elif type is numbers.Number:
-            read = self.read_number
-        elif type is bool:
-            read = self.read_bool
-        else:
-            raise ValueError("invalid type specified")
-        if allow_none is None:
-            allow_none = (type is None)
         try:
-            if skip_invalid:
-                while True:
-                    try:
-                        yield read(allow_none=allow_none)
-                    except InvalidLineError:
-                        pass
-            else:
-                while True:
-                    yield read(allow_none=allow_none)
+            while True:
+                try:
+                    yield self.read(type=type, allow_none=allow_none)
+                except InvalidLineError:
+                    if not skip_invalid:
+                        raise
         except EOFError:
             pass
 
     def __iter__(self):
+        """
+        See :py:meth:`~Reader.iter()`.
+        """
         return self.iter()
 
 
 class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
+
+    Instances can be used as a context manager.
+
+    :param file-like fp: writable file-like object
+    :param bool flush: whether to flush the file-like object after
+        writing each line
     """
     def __init__(self, fp, flush=False):
         super(Writer, self).__init__(fp)
@@ -247,11 +203,7 @@ class Writer(ReaderWriterBase):
         try:
             fp.write(u'')
         except TypeError:
-            self._text_fp = make_text_fp(fp)
-            self._fp_is_binary = True
-        else:
-            self._text_fp = fp
-            self._fp_is_binary = False
+            self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
 
     def write(self, obj):
         line = json.dumps(obj, ensure_ascii=False)
@@ -262,17 +214,16 @@ class Writer(ReaderWriterBase):
             # depending on whether the serialised structure can be
             # encoded using ASCII only. However, text streams (including
             # io.TextIOWrapper) only accept unicode strings. To avoid
-            # useless encode/decode overhead, write directly to the
-            # file-like object if it was a binary stream (and hence
-            # will accepts bytes).
-            if self._fp_is_binary:
+            # useless encode/decode overhead, write bytes directly to
+            # the file-like object if it was a binary stream.
+            if self._fp is not self._text_fp:
+                # Original file-like object was wrapped.
                 self._fp.write(line)
                 self._fp.write(b"\n")
                 written = True
             else:
                 line = line.decode('utf-8')
         if not written:
-            assert isinstance(line, six.text_type)
             self._text_fp.write(line)
             self._text_fp.write(u"\n")
         if self._flush:
@@ -280,6 +231,29 @@ class Writer(ReaderWriterBase):
 
 
 def open(name, mode='r', flush=False):
+    """
+    Open a jsonlines file for reading or writing.
+
+    This is a convenience function that opens a file, and wraps it in
+    either a :py:class:`Reader` or :py:class:`Writer` instance,
+    depending on the specified `mode`.
+
+    The resulting reader or writer must be closed after use by the
+    caller, which will also close the opened file.  This can be done by
+    calling ``.close()``, but the easiest way to ensure proper resource
+    finalisation is to use a ``with`` block (context manager), e.g.
+
+    ::
+
+        with jsonlines.open('out.jsonl', mode='w') as writer:
+            writer.write(...)
+
+    :param file-like fp: name of the file to open
+    :param str mode: whether to open the file for reading (``r``) or
+        writing (``w``).
+    :param bool flush: whether to flush the file-like object after
+        writing each line
+    """
     if mode not in {'r', 'w'}:
         raise ValueError("'mode' must be either 'r' or 'w'")
     fp = io.open(name, mode=mode + 't', encoding='utf-8')

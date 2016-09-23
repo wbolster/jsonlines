@@ -18,6 +18,7 @@ def test_reader():
             next(it)
         with pytest.raises(EOFError):
             reader.read()
+    assert reader.closed
 
 
 def test_writer():
@@ -26,6 +27,7 @@ def test_writer():
         writer.write({'a': 1})
         writer.write({'b': 2})
     assert fp.getvalue() == SAMPLE_BYTES
+    assert writer.closed
 
 
 def test_invalid_lines():
@@ -35,7 +37,7 @@ def test_invalid_lines():
             reader.read()
         exc = excinfo.value
         assert str(exc).startswith("invalid json")
-        assert exc.value == data
+        assert exc.line == data
 
 
 def test_skip_invalid():
@@ -47,13 +49,13 @@ def test_skip_invalid():
 
 
 def test_typed_reads():
-    with jsonlines.Reader(io.StringIO(u'12\n"foo"')) as reader:
-        assert reader.read_int() == 12
+    with jsonlines.Reader(io.StringIO(u'12\n"foo"\n')) as reader:
+        assert reader.read(type=int) == 12
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
-            reader.read_int()
+            reader.read(type=float)
         exc = excinfo.value
         assert "does not match requested type" in str(exc)
-        assert exc.value == "foo"
+        assert exc.line == '"foo"'
 
 
 def test_typed_iteration():
@@ -70,7 +72,6 @@ def test_typed_iteration():
 
 
 # TODO: jsonlines.open() in a tmpdir
-# TODO: text context manager
 
 
 def test_invalid_mode():
