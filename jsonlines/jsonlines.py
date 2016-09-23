@@ -270,13 +270,16 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-def open(name, mode='r', flush=False):
+def open(name, mode='r', **kwargs):
     """
     Open a jsonlines file for reading or writing.
 
     This is a convenience function that opens a file, and wraps it in
     either a :py:class:`Reader` or :py:class:`Writer` instance,
     depending on the specified `mode`.
+
+    Any additional keyword arguments will be passed on to the reader and
+    writer: see their documentation for available options.
 
     The resulting reader or writer must be closed after use by the
     caller, which will also close the opened file.  This can be done by
@@ -291,15 +294,14 @@ def open(name, mode='r', flush=False):
     :param file-like fp: name of the file to open
     :param str mode: whether to open the file for reading (``r``) or
         writing (``w``).
-    :param bool flush: whether to flush the file-like object after
-        writing each line
+    :param **kwargs: additional arguments, forwarded to the reader or writer
     """
     if mode not in {'r', 'w'}:
         raise ValueError("'mode' must be either 'r' or 'w'")
     fp = io.open(name, mode=mode + 't', encoding='utf-8')
     if mode == 'r':
-        instance = Reader(fp)
+        instance = Reader(fp, **kwargs)
     else:
-        instance = Writer(fp, flush=flush)
+        instance = Writer(fp, **kwargs)
     instance._should_close_fp = True
     return instance
