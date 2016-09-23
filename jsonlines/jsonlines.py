@@ -206,6 +206,11 @@ class Writer(ReaderWriterBase):
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
 
     def write(self, obj):
+        """
+        Encode and write a single object.
+
+        :param obj: the object to encode and write
+        """
         line = json.dumps(obj, ensure_ascii=False)
         written = False
         if six.PY2 and isinstance(line, six.binary_type):
@@ -228,6 +233,15 @@ class Writer(ReaderWriterBase):
             self._text_fp.write(u"\n")
         if self._flush:
             self._text_fp.flush()
+
+    def write_all(self, iterable):
+        """
+        Encode and write multiple objects.
+
+        :param iterable: an iterable of objects
+        """
+        for obj in iterable:
+            self.write(obj)
 
 
 def open(name, mode='r', flush=False):
