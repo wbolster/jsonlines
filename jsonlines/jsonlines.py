@@ -191,19 +191,37 @@ class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
 
+    The `compact` argument can be used to to produce smaller output.
+
+    The `sort` argument can be used to sort keys in json objects, and
+    will produce deterministic output.
+
+    For more control, provide a a custom encoder callable using the
+    `dumps` argument. The callable must produce (unicode) string output.
+    If specified, the `compact` and `sort` arguments will be ignored.
+
     Instances can be used as a context manager.
 
     :param file-like fp: writable file-like object
+    :param bool compact: whether to use a compact output format
+    :param bool sort: whether to sort object keys
+    :param callable dumps: custom encoder callable
     :param bool flush: whether to flush the file-like object after
         writing each line
     """
-    def __init__(self, fp, flush=False):
+    def __init__(self, fp, compact=False, sort=False, dumps=None, flush=False):
         super(Writer, self).__init__(fp)
-        self._flush = flush
         try:
             fp.write(u'')
         except TypeError:
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
+        if dumps is None:
+            encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort)
+            if compact:
+                encoder_kwargs.update(separators=(',', ':'))
+            dumps = json.JSONEncoder(**encoder_kwargs).encode
+        self._dumps = dumps
+        self._flush = flush
 
     def write(self, obj):
         """
@@ -211,7 +229,7 @@ class Writer(ReaderWriterBase):
 
         :param obj: the object to encode and write
         """
-        line = json.dumps(obj, ensure_ascii=False)
+        line = self._dumps(obj)
         written = False
         if six.PY2 and isinstance(line, six.binary_type):
             # On Python 2, the JSON module has the nasty habit of
