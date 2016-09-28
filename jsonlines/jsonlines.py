@@ -101,12 +101,20 @@ class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
 
+    The `loads` argument can be used to replace the standard json
+    decoder. If specified, it must be a callable that accepts a
+    (unicode) string and returns the decoded object.
+
     Instances are iterable and can be used as a context manager.
 
     :param file-like fp: writable file-like object
+    :param callable loads: custom json decoder callable
     """
-    def __init__(self, fp):
+    def __init__(self, fp, loads=None):
         super(Reader, self).__init__(fp)
+        if loads is None:
+            loads = json.loads
+        self._loads = loads
         self._lineno = 0
         if not isinstance(fp.read(0), six.text_type):
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
@@ -135,7 +143,7 @@ class Reader(ReaderWriterBase):
         self._lineno += 1
 
         try:
-            value = json.loads(line)
+            value = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
                 "invalid json: {}".format(orig_exc), line, self._lineno)
@@ -191,19 +199,37 @@ class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
 
+    The `compact` argument can be used to to produce smaller output.
+
+    The `sort` argument can be used to sort keys in json objects, and
+    will produce deterministic output.
+
+    For more control, provide a a custom encoder callable using the
+    `dumps` argument. The callable must produce (unicode) string output.
+    If specified, the `compact` and `sort` arguments will be ignored.
+
     Instances can be used as a context manager.
 
     :param file-like fp: writable file-like object
+    :param bool compact: whether to use a compact output format
+    :param bool sort: whether to sort object keys
+    :param callable dumps: custom encoder callable
     :param bool flush: whether to flush the file-like object after
         writing each line
     """
-    def __init__(self, fp, flush=False):
+    def __init__(self, fp, compact=False, sort=False, dumps=None, flush=False):
         super(Writer, self).__init__(fp)
-        self._flush = flush
         try:
             fp.write(u'')
         except TypeError:
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
+        if dumps is None:
+            encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort)
+            if compact:
+                encoder_kwargs.update(separators=(',', ':'))
+            dumps = json.JSONEncoder(**encoder_kwargs).encode
+        self._dumps = dumps
+        self._flush = flush
 
     def write(self, obj):
         """
@@ -211,7 +237,7 @@ class Writer(ReaderWriterBase):
 
         :param obj: the object to encode and write
         """
-        line = json.dumps(obj, ensure_ascii=False)
+        line = self._dumps(obj)
         written = False
         if six.PY2 and isinstance(line, six.binary_type):
             # On Python 2, the JSON module has the nasty habit of
@@ -244,13 +270,16 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-def open(name, mode='r', flush=False):
+def open(name, mode='r', **kwargs):
     """
     Open a jsonlines file for reading or writing.
 
     This is a convenience function that opens a file, and wraps it in
     either a :py:class:`Reader` or :py:class:`Writer` instance,
     depending on the specified `mode`.
+
+    Any additional keyword arguments will be passed on to the reader and
+    writer: see their documentation for available options.
 
     The resulting reader or writer must be closed after use by the
     caller, which will also close the opened file.  This can be done by
@@ -265,15 +294,14 @@ def open(name, mode='r', flush=False):
     :param file-like fp: name of the file to open
     :param str mode: whether to open the file for reading (``r``) or
         writing (``w``).
-    :param bool flush: whether to flush the file-like object after
-        writing each line
+    :param **kwargs: additional arguments, forwarded to the reader or writer
     """
     if mode not in {'r', 'w'}:
         raise ValueError("'mode' must be either 'r' or 'w'")
     fp = io.open(name, mode=mode + 't', encoding='utf-8')
     if mode == 'r':
-        instance = Reader(fp)
+        instance = Reader(fp, **kwargs)
     else:
-        instance = Writer(fp, flush=flush)
+        instance = Writer(fp, **kwargs)
     instance._should_close_fp = True
     return instance

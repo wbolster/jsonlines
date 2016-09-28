@@ -1,6 +1,11 @@
+"""
+Tests for the jsonlines library.
+"""
 
 import io
 import jsonlines
+
+from collections import OrderedDict
 
 import pytest
 
@@ -70,6 +75,29 @@ def test_typed_iteration():
         with pytest.raises(jsonlines.InvalidLineError):
             next(it)
 
+
+def test_writer_flags():
+    fp = io.BytesIO()
+    with jsonlines.Writer(fp, compact=True, sort=True) as writer:
+        writer.write(OrderedDict([
+            ('b', 2),
+            ('a', 1),
+        ]))
+    assert fp.getvalue() == b'{"a":1,"b":2}\n'
+
+
+def test_custom_dumps():
+    fp = io.BytesIO()
+    writer = jsonlines.Writer(fp, dumps=lambda obj: 'oh hai')
+    with writer:
+        writer.write({})
+    assert fp.getvalue() == b'oh hai\n'
+
+
+def test_custom_loads():
+    fp = io.BytesIO(b"{}\n")
+    with jsonlines.Reader(fp, loads=lambda s: 'uh what') as reader:
+        assert reader.read() == 'uh what'
 
 # TODO: jsonlines.open() in a tmpdir
 
