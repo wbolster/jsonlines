@@ -119,7 +119,7 @@ class Reader(ReaderWriterBase):
         if not isinstance(fp.read(0), six.text_type):
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
 
-    def read(self, type=None, allow_none=False, skip_invalid=False):
+    def read(self, type=None, allow_none=False):
         """
         Read and decode a line from the underlying file-like object.
 
