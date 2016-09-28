@@ -78,7 +78,7 @@ def test_typed_iteration():
 
 def test_writer_flags():
     fp = io.BytesIO()
-    with jsonlines.Writer(fp, compact=True, sort=True) as writer:
+    with jsonlines.Writer(fp, compact=True, sort_keys=True) as writer:
         writer.write(OrderedDict([
             ('b', 2),
             ('a', 1),

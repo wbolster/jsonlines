@@ -201,7 +201,7 @@ class Writer(ReaderWriterBase):
 
     The `compact` argument can be used to to produce smaller output.
 
-    The `sort` argument can be used to sort keys in json objects, and
+    The `sort_keys` argument can be used to sort keys in json objects, and
     will produce deterministic output.
 
     For more control, provide a a custom encoder callable using the
@@ -212,19 +212,21 @@ class Writer(ReaderWriterBase):
 
     :param file-like fp: writable file-like object
     :param bool compact: whether to use a compact output format
-    :param bool sort: whether to sort object keys
+    :param bool sort_keys: whether to sort object keys
     :param callable dumps: custom encoder callable
     :param bool flush: whether to flush the file-like object after
         writing each line
     """
-    def __init__(self, fp, compact=False, sort=False, dumps=None, flush=False):
+    def __init__(
+            self, fp, compact=False, sort_keys=False, dumps=None,
+            flush=False):
         super(Writer, self).__init__(fp)
         try:
             fp.write(u'')
         except TypeError:
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
         if dumps is None:
-            encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort)
+            encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort_keys)
             if compact:
                 encoder_kwargs.update(separators=(',', ':'))
             dumps = json.JSONEncoder(**encoder_kwargs).encode
