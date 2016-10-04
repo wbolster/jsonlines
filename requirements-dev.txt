@@ -3,3 +3,4 @@ pep8-naming
 pytest
 pytest-cov
 pytest-pep8
+sphinx
