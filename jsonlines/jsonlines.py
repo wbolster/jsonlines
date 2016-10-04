@@ -48,7 +48,16 @@ class InvalidLineError(Error, ValueError):
     This happens when the line does not contain valid JSON, or if a
     specific data type has been requested, and the line contained a
     different data type.
+
+    The original line itself is stored on the exception instance as the
+    ``.line`` attribute, and the line number as ``.lineno``.
     """
+    #: The invalid line
+    line = None
+
+    #: The line number
+    lineno = None
+
     def __init__(self, msg, line, lineno):
         self.line = line.rstrip()
         self.lineno = lineno
