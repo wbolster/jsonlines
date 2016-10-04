@@ -107,7 +107,7 @@ class Reader(ReaderWriterBase):
 
     Instances are iterable and can be used as a context manager.
 
-    :param file-like fp: writable file-like object
+    :param file-like fp: readable file-like object
     :param callable loads: custom json decoder callable
     """
     def __init__(self, fp, loads=None):
