@@ -4,9 +4,11 @@ jsonlines
 
 .. py:currentmodule:: jsonlines
 
-``jsonlines`` is a Python library to simplify working with jsonlines_ data.
+``jsonlines`` is a Python library to simplify working with jsonlines_
+and ndjson_ data.
 
 .. _jsonlines: http://jsonlines.org/
+.. _ndjson: http://ndjson.org/
 
 The *jsonlines* file format is very straight-forward: it's simply a UTF-8
 encoded text file with one JSON value per line.
