@@ -85,8 +85,10 @@ def test_typed_iteration():
     fp = io.StringIO(u'1\n2\n')
     with jsonlines.Reader(fp) as reader:
         it = reader.iter(type=str)
-        with pytest.raises(jsonlines.InvalidLineError):
+        with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             next(it)
+        exc = excinfo.value
+        assert "does not match requested type" in str(exc)
 
 
 def test_writer_flags():
