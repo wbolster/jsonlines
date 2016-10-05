@@ -10,12 +10,13 @@ and ndjson_ data.
 .. _jsonlines: http://jsonlines.org/
 .. _ndjson: http://ndjson.org/
 
-This file format is very simple: UTF-8 encoded text with one valid
-JSON value per line. While code to consume and create such data is not
-complex, it quickly becomes long when adding data validation, error
-handling, and so on. This small library implements all that (and
-more!) so that applications using this format do not have to reinvent
-the wheel.
+This data format is straight-forward: it is simply one valid JSON
+value per line, encoded using UTF-8. While code to consume and create
+such data is not that complex, it quickly becomes non-trivial enough
+to warrant a dedicated library when adding data validation, error
+handling, support for both binary and text streams, and so on. This
+small library implements all that (and more!) so that applications
+using this format do not have to reinvent the wheel.
 
 
 Features
