@@ -59,6 +59,7 @@ class InvalidLineError(Error, ValueError):
     lineno = None
 
     def __init__(self, msg, line, lineno):
+        msg = "{} (line {})".format(msg, lineno)
         self.line = line.rstrip()
         self.lineno = lineno
         super(InvalidLineError, self).__init__(msg)
@@ -160,7 +161,8 @@ class Reader(ReaderWriterBase):
             value = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
-                "invalid json: {}".format(orig_exc), line, self._lineno)
+                "line contains invalid json: {}".format(orig_exc),
+                line, self._lineno)
             six.raise_from(exc, orig_exc)
 
         if value is None:

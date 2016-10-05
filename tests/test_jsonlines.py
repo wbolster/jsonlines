@@ -41,7 +41,7 @@ def test_invalid_lines():
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read()
         exc = excinfo.value
-        assert str(exc).startswith("invalid json")
+        assert "invalid json" in str(exc)
         assert exc.line == data
 
 
