@@ -11,6 +11,7 @@ import pytest
 
 
 SAMPLE_BYTES = b'{"a": 1}\n{"b": 2}\n'
+SAMPLE_TEXT = SAMPLE_BYTES.decode('utf-8')
 
 
 def test_reader():
@@ -31,11 +32,22 @@ def test_reading_from_iterable():
         assert list(reader) == [1, {}]
 
 
-def test_writer():
-    fp = io.BytesIO()
+def test_writer_text():
+    fp = io.StringIO()
     with jsonlines.Writer(fp) as writer:
         writer.write({'a': 1})
         writer.write({'b': 2})
+    assert fp.getvalue() == SAMPLE_TEXT
+    assert writer.closed
+
+
+def test_writer_binary():
+    fp = io.BytesIO()
+    with jsonlines.Writer(fp) as writer:
+        writer.write_all([
+            {'a': 1},
+            {'b': 2},
+        ])
     assert fp.getvalue() == SAMPLE_BYTES
     assert writer.closed
 

@@ -20,22 +20,6 @@ TYPE_MAPPING = {
 }
 
 
-class NonClosingTextIOWrapper(io.TextIOWrapper):
-    """
-    Text IO wrapper that does not close the underlying stream.
-    """
-    def __del__(self):
-        try:
-            self.flush()
-            self.detach()
-        except Exception:
-            pass
-
-    def close(self):
-        self.flush()
-        self.detach()
-
-
 class Error(Exception):
     """Base error class."""
     pass
@@ -74,7 +58,7 @@ class ReaderWriterBase(object):
     closed = False
 
     def __init__(self, fp):
-        self._fp = self._text_fp = fp
+        self._fp = fp
         self._should_close_fp = False
         self.closed = False
 
@@ -89,8 +73,6 @@ class ReaderWriterBase(object):
         if self.closed:
             return
         self.closed = True
-        if self._fp is not self._text_fp:
-            self._text_fp.close()
         if self._should_close_fp:
             self._fp.close()
 
@@ -254,8 +236,9 @@ class Writer(ReaderWriterBase):
         super(Writer, self).__init__(fp)
         try:
             fp.write(u'')
+            self._fp_is_binary = False
         except TypeError:
-            self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
+            self._fp_is_binary = True
         if dumps is None:
             encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort_keys)
             if compact:
@@ -271,27 +254,22 @@ class Writer(ReaderWriterBase):
         :param obj: the object to encode and write
         """
         line = self._dumps(obj)
-        written = False
-        if six.PY2 and isinstance(line, six.binary_type):
-            # On Python 2, the JSON module has the nasty habit of
-            # returning either a byte string or unicode string,
-            # depending on whether the serialised structure can be
-            # encoded using ASCII only. However, text streams (including
-            # io.TextIOWrapper) only accept unicode strings. To avoid
-            # useless encode/decode overhead, write bytes directly to
-            # the file-like object if it was a binary stream.
-            if self._fp is not self._text_fp:
-                # Original file-like object was wrapped.
-                self._fp.write(line)
-                self._fp.write(b"\n")
-                written = True
-            else:
-                line = line.decode('utf-8')
-        if not written:
-            self._text_fp.write(line)
-            self._text_fp.write(u"\n")
+        # On Python 2, the JSON module has the nasty habit of returning
+        # either a byte string or unicode string, depending on whether
+        # the serialised structure can be encoded using ASCII only, so
+        # this means this code needs to handle all combinations.
+        if self._fp_is_binary:
+            if not isinstance(line, six.binary_type):
+                line = line.encode('utf-8')
+            self._fp.write(line)
+            self._fp.write(b'\n')
+        else:
+            if not isinstance(line, six.text_type):
+                line = line.decode('ascii')  # For Python 2.
+            self._fp.write(line)
+            self._fp.write(u'\n')
         if self._flush:
-            self._text_fp.flush()
+            self._fp.flush()
 
     def write_all(self, iterable):
         """
