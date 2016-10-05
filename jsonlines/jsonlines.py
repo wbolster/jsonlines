@@ -54,13 +54,10 @@ class ReaderWriterBase(object):
     Base class with shared behaviour for both the reader and writer.
     """
 
+    _should_close_fp = False
+
     #: Whether this reader/writer is closed.
     closed = False
-
-    def __init__(self, fp):
-        self._fp = fp
-        self._should_close_fp = False
-        self.closed = False
 
     def close(self):
         """
@@ -103,7 +100,7 @@ class Reader(ReaderWriterBase):
     :param callable loads: custom json decoder callable
     """
     def __init__(self, fp, loads=None):
-        super(Reader, self).__init__(fp)
+        self._fp = fp
         if loads is None:
             loads = json.loads
         self._loads = loads
@@ -233,7 +230,6 @@ class Writer(ReaderWriterBase):
     def __init__(
             self, fp, compact=False, sort_keys=False, dumps=None,
             flush=False):
-        super(Writer, self).__init__(fp)
         try:
             fp.write(u'')
             self._fp_is_binary = False
@@ -244,6 +240,7 @@ class Writer(ReaderWriterBase):
             if compact:
                 encoder_kwargs.update(separators=(',', ':'))
             dumps = json.JSONEncoder(**encoder_kwargs).encode
+        self._fp = fp
         self._dumps = dumps
         self._flush = flush
 
