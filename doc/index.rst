@@ -15,7 +15,7 @@ encoded text file with one JSON value per line.
 Features
 ========
 
-* Convenience :py:func:`jsonlines.open()` function
+* Convenient :py:func:`~jsonlines.open()` function
 
   * makes simple cases trivial to write
   * takes a file name and a mode
@@ -23,7 +23,7 @@ Features
     :py:class:`~jsonlines.Writer` instance
   * can be used as a context manager
 
-* Flexible reader (:py:class:`jsonlines.Reader`)
+* Flexible :py:class:`~jsonlines.Reader`
 
   * wraps a file-like object
   * can read lines directly via the
@@ -34,17 +34,18 @@ Features
   * can skip invalid lines during iteration
   * provides decent error messages
   * can be used as a context manager
+  * allows complete control over decoding using a custom ``loads``
+    callable
 
-* Flexible writer (:py:class:`jsonlines.Writer`)
+* Flexible :py:class:`~jsonlines.Writer`
 
   * wraps a file-like object
   * can produce compact output
   * can sort keys (deterministic output)
   * can flush the underlying stream after each write
   * can be used as a context manager
-
-* Both JSON encoding and decoding behaviour is fully configurable via
-  custom ``dumps`` and ``loads`` callables.
+  * allows complete control over encoding using a custom ``dumps``
+    callable
 
 
 Installation
