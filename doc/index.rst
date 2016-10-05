@@ -157,12 +157,14 @@ Reader
 
 .. autoclass:: jsonlines.Reader
    :members:
+   :inherited-members:
 
 Writer
 ------
 
 .. autoclass:: jsonlines.Writer
    :members:
+   :inherited-members:
 
 Errors
 ------
