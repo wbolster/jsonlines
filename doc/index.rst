@@ -10,8 +10,12 @@ and ndjson_ data.
 .. _jsonlines: http://jsonlines.org/
 .. _ndjson: http://ndjson.org/
 
-The *jsonlines* file format is very straight-forward: it's simply a UTF-8
-encoded text file with one JSON value per line.
+This file format is very simple: UTF-8 encoded text with one valid
+JSON value per line. While code to consume and create such data is not
+complex, it quickly becomes long when adding data validation, error
+handling, and so on. This small library implements all that (and
+more!) so that applications using this format do not have to reinvent
+the wheel.
 
 
 Features
@@ -135,7 +139,7 @@ calling code. That means no ``.close()`` is needed there::
       ...
 
 
-This should be enough to get you started. See the API docs below for
+This should be enough to get started. See the API docs below for
 more details.
 
 
