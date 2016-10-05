@@ -2,10 +2,10 @@
 Tests for the jsonlines library.
 """
 
+import collections
 import io
 import jsonlines
-
-from collections import OrderedDict
+import tempfile
 
 import pytest
 
@@ -121,7 +121,7 @@ def test_typed_iteration():
 def test_writer_flags():
     fp = io.BytesIO()
     with jsonlines.Writer(fp, compact=True, sort_keys=True) as writer:
-        writer.write(OrderedDict([
+        writer.write(collections.OrderedDict([
             ('b', 2),
             ('a', 1),
         ]))
@@ -141,10 +141,23 @@ def test_custom_loads():
     with jsonlines.Reader(fp, loads=lambda s: 'uh what') as reader:
         assert reader.read() == 'uh what'
 
-# TODO: jsonlines.open() in a tmpdir
+
+def test_open_reading():
+    with tempfile.NamedTemporaryFile("wb") as fp:
+        fp.write(b"123\n")
+        fp.flush()
+        with jsonlines.open(fp.name) as reader:
+            assert list(reader) == [123]
 
 
-def test_invalid_mode():
+def test_open_writing():
+    with tempfile.NamedTemporaryFile("w+b") as fp:
+        with jsonlines.open(fp.name, mode='w') as writer:
+            writer.write(123)
+        assert fp.read() == b"123\n"
+
+
+def test_open_invalid_mode():
     with pytest.raises(ValueError) as excinfo:
         jsonlines.open('foo', mode='foo')
     assert 'mode' in str(excinfo.value)
