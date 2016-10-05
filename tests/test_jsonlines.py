@@ -53,6 +53,19 @@ def test_skip_invalid():
     assert next(it) == 34
 
 
+def test_empty_lines():
+    data_with_empty_line = b"1\n\n2\n"
+    with jsonlines.Reader(io.BytesIO(data_with_empty_line)) as reader:
+        assert reader.read()
+        with pytest.raises(jsonlines.InvalidLineError):
+            reader.read()
+        assert reader.read() == 2
+        with pytest.raises(EOFError):
+            reader.read()
+    with jsonlines.Reader(io.BytesIO(data_with_empty_line)) as reader:
+        assert list(reader.iter(skip_empty=True)) == [1, 2]
+
+
 def test_typed_reads():
     with jsonlines.Reader(io.StringIO(u'12\n"foo"\n')) as reader:
         assert reader.read(type=int) == 12

@@ -128,7 +128,7 @@ class Reader(ReaderWriterBase):
         if not isinstance(fp.read(0), six.text_type):
             self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
 
-    def read(self, type=None, allow_none=False):
+    def read(self, type=None, allow_none=False, skip_empty=False):
         """
         Read and decode a line from the underlying file-like object.
 
@@ -142,11 +142,16 @@ class Reader(ReaderWriterBase):
         considered invalid, and will cause :py:exc:`InvalidLineError`.
         The `allow_none` argument can be used to change this behaviour,
         in which case ``None`` will be returned instead.
+
+        If `skip_empty` is set to ``True``, empty lines and lines
+        containing only whitespace are silently skipped.
         """
         if type is not None and type not in TYPE_MAPPING:
             raise ValueError("invalid type specified")
 
         line = self._text_fp.readline()
+        while skip_empty and line and not line.strip():
+            line = self._text_fp.readline()
         if not line:
             raise EOFError
         self._lineno += 1
@@ -174,7 +179,8 @@ class Reader(ReaderWriterBase):
 
         return value
 
-    def iter(self, type=None, allow_none=False, skip_invalid=False):
+    def iter(self, type=None, allow_none=False, skip_empty=False,
+             skip_invalid=False):
         """
         Iterate over all lines.
 
@@ -183,14 +189,19 @@ class Reader(ReaderWriterBase):
         is the same as directly iterating over this :py:class:`Reader`
         instance.
 
-        See :py:meth:`~Reader.read()` for a description of the `type`
-        and `allow_none` arguments. When `skip_invalid` is set to
-        ``True``, invalid lines will be silently ignored.
+        When `skip_invalid` is set to ``True``, invalid lines will be
+        silently ignored.
+
+        See :py:meth:`~Reader.read()` for a description of the other
+        arguments.
         """
         try:
             while True:
                 try:
-                    yield self.read(type=type, allow_none=allow_none)
+                    yield self.read(
+                        type=type,
+                        allow_none=allow_none,
+                        skip_empty=skip_empty)
                 except InvalidLineError:
                     if not skip_invalid:
                         raise
