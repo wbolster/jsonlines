@@ -26,6 +26,11 @@ def test_reader():
     assert reader.closed
 
 
+def test_reading_from_iterable():
+    with jsonlines.Reader(['1', b'{}']) as reader:
+        assert list(reader) == [1, {}]
+
+
 def test_writer():
     fp = io.BytesIO()
     with jsonlines.Writer(fp) as writer:
@@ -51,6 +56,13 @@ def test_skip_invalid():
     it = reader.iter(skip_invalid=True)
     assert next(it) == 12
     assert next(it) == 34
+
+
+def test_invalid_utf8():
+    with jsonlines.Reader([b'\xff\xff']) as reader:
+        with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+            reader.read()
+        assert 'line is not valid utf-8' in str(excinfo.value)
 
 
 def test_empty_lines():

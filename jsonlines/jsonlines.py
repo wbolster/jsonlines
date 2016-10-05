@@ -126,8 +126,7 @@ class Reader(ReaderWriterBase):
             loads = json.loads
         self._loads = loads
         self._lineno = 0
-        if not isinstance(fp.read(0), six.text_type):
-            self._text_fp = NonClosingTextIOWrapper(fp, encoding='utf-8')
+        self._line_iter = iter(fp)
 
     def read(self, type=None, allow_none=False, skip_empty=False):
         """
@@ -150,12 +149,22 @@ class Reader(ReaderWriterBase):
         if type is not None and type not in TYPE_MAPPING:
             raise ValueError("invalid type specified")
 
-        line = self._text_fp.readline()
+        line = next(self._line_iter, '')
         while skip_empty and line and not line.strip():
-            line = self._text_fp.readline()
+            self._lineno += 1
+            line = next(self._line_iter, '')
         if not line:
             raise EOFError
         self._lineno += 1
+
+        if isinstance(line, six.binary_type):
+            try:
+                line = line.decode('utf-8')
+            except UnicodeDecodeError as orig_exc:
+                exc = InvalidLineError(
+                    "line is not valid utf-8: {}".format(orig_exc),
+                    line, self._lineno)
+                six.raise_from(exc, orig_exc)
 
         try:
             value = self._loads(line)
