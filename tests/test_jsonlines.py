@@ -24,7 +24,6 @@ def test_reader():
             next(it)
         with pytest.raises(EOFError):
             reader.read()
-    assert reader.closed
 
 
 def test_reading_from_iterable():
@@ -38,7 +37,6 @@ def test_writer_text():
         writer.write({'a': 1})
         writer.write({'b': 2})
     assert fp.getvalue() == SAMPLE_TEXT
-    assert writer.closed
 
 
 def test_writer_binary():
@@ -49,7 +47,12 @@ def test_writer_binary():
             {'b': 2},
         ])
     assert fp.getvalue() == SAMPLE_BYTES
-    assert writer.closed
+
+
+def test_closing():
+    writer = jsonlines.Writer(io.BytesIO())
+    writer.close()
+    writer.close()  # no-op
 
 
 def test_invalid_lines():

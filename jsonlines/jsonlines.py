@@ -53,12 +53,6 @@ class ReaderWriterBase(object):
     """
     Base class with shared behaviour for both the reader and writer.
     """
-
-    _should_close_fp = False
-
-    #: Whether this reader/writer is closed.
-    closed = False
-
     def close(self):
         """
         Close this reader/writer.
@@ -67,9 +61,9 @@ class ReaderWriterBase(object):
         this reader/writer. When an already opened file-like object was
         provided, the caller is responsible for closing it.
         """
-        if self.closed:
+        if self._closed:
             return
-        self.closed = True
+        self._closed = True
         if self._should_close_fp:
             self._fp.close()
 
@@ -101,6 +95,8 @@ class Reader(ReaderWriterBase):
     """
     def __init__(self, fp, loads=None):
         self._fp = fp
+        self._should_close_fp = False
+        self._closed = False
         if loads is None:
             loads = json.loads
         self._loads = loads
@@ -230,6 +226,7 @@ class Writer(ReaderWriterBase):
     def __init__(
             self, fp, compact=False, sort_keys=False, dumps=None,
             flush=False):
+        self._closed = False
         try:
             fp.write(u'')
             self._fp_is_binary = False
@@ -241,6 +238,7 @@ class Writer(ReaderWriterBase):
                 encoder_kwargs.update(separators=(',', ':'))
             dumps = json.JSONEncoder(**encoder_kwargs).encode
         self._fp = fp
+        self._should_close_fp = False
         self._dumps = dumps
         self._flush = flush
 
