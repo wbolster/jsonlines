@@ -187,9 +187,7 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
-* 1.x.x
-
-  *not yet released*
+* 1.0.0, released at 2016-10-05
 
   * minimum python versions are python 3.4+ and python2.7+
   * implemented lots of configuration options
@@ -198,9 +196,7 @@ Version history
   * switch to semver
 
 
-* 0.0.1
-
-  Released at 2015-03-02.
+* 0.0.1, released at 2015-03-02
 
   * initial release with basic functionality
 
