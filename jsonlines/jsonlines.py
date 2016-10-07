@@ -91,9 +91,9 @@ class Reader(ReaderWriterBase):
     Reader for the jsonlines format.
 
     The first argument must be an iterable that yields JSON encoded
-    strings. Usually this will be a readable file-like object, such an
-    open file or ``io.TextIO`` instances, but it can also be something
-    else as long as it yields strings when iterated over.
+    strings. Usually this will be a readable file-like object, such as
+    an open file or an ``io.TextIO`` instance, but it can also be
+    something else as long as it yields strings when iterated over.
 
     The `loads` argument can be used to replace the standard json
     decoder. If specified, it must be a callable that accepts a
