@@ -121,7 +121,6 @@ write both a single object, or multiple objects at once::
   writer.close()
   fp.close()
 
-
 Both readers and writers can be used as a context manager, in which
 case they will be closed automatically. Note that this does not close
 the passed-in file-like object since that object‘s life span is
@@ -139,7 +138,6 @@ calling code. That means no ``.close()`` is needed there::
   with jsonlines.open('input.jsonl') as reader:
       ...
 
-
 This should be enough to get started. See the API docs below for
 more details.
 
@@ -147,27 +145,15 @@ more details.
 API
 ===
 
-Convenience
------------
-
 .. autofunction:: jsonlines.open
-
-Reader
-------
 
 .. autoclass:: jsonlines.Reader
    :members:
    :inherited-members:
 
-Writer
-------
-
 .. autoclass:: jsonlines.Writer
    :members:
    :inherited-members:
-
-Errors
-------
 
 .. autoclass:: jsonlines.Error
    :members:
