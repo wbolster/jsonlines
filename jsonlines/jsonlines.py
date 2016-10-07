@@ -218,14 +218,20 @@ class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
 
+    The `fp` argument must be a file-like object with a ``.write()``
+    method accepting either text (unicode) or bytes.
+
     The `compact` argument can be used to to produce smaller output.
 
-    The `sort_keys` argument can be used to sort keys in json objects, and
-    will produce deterministic output.
+    The `sort_keys` argument can be used to sort keys in json objects,
+    and will produce deterministic output.
 
     For more control, provide a a custom encoder callable using the
     `dumps` argument. The callable must produce (unicode) string output.
     If specified, the `compact` and `sort` arguments will be ignored.
+
+    When the `flush` argument is set to ``True``, the writer will call
+    ``fp.flush()`` after each written line.
 
     Instances can be used as a context manager.
 
@@ -237,8 +243,7 @@ class Writer(ReaderWriterBase):
         writing each line
     """
     def __init__(
-            self, fp, compact=False, sort_keys=False, dumps=None,
-            flush=False):
+            self, fp, compact=False, sort_keys=False, dumps=None, flush=False):
         self._closed = False
         try:
             fp.write(u'')
