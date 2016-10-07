@@ -177,6 +177,15 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
+* 1.1.0, released at 2016-10-07
+
+  * rename first argument to :py:class:`Reader` since it is not
+    required to be a file-like object
+  * actually check that the reader/writer is not closed when
+    performing operations
+  * improved `repr()` output
+  * doc tweaks
+
 * 1.0.0, released at 2016-10-05
 
   * minimum python versions are python 3.4+ and python2.7+
