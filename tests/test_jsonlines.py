@@ -29,6 +29,7 @@ def test_reader():
 def test_reading_from_iterable():
     with jsonlines.Reader(['1', b'{}']) as reader:
         assert list(reader) == [1, {}]
+    assert 'wrapping <list at ' in repr(reader)
 
 
 def test_writer_text():
@@ -155,6 +156,7 @@ def test_open_writing():
         with jsonlines.open(fp.name, mode='w') as writer:
             writer.write(123)
         assert fp.read() == b"123\n"
+    assert fp.name in repr(writer)
 
 
 def test_open_invalid_mode():

@@ -68,9 +68,15 @@ class ReaderWriterBase(object):
             self._fp.close()
 
     def __repr__(self):
-        return '<jsonlines.{} fp={!r}'.format(
-            type(self).__name__,
-            self._fp)
+        name = getattr(self._fp, 'name', None)
+        if name:
+            wrapping = repr(name)
+        else:
+            wrapping = '<{} at 0x{:x}>'.format(
+                type(self._fp).__name__,
+                id(self._fp))
+        return '<jsonlines.{} at 0x{:x} wrapping {}>'.format(
+            type(self).__name__, id(self), wrapping)
 
     def __enter__(self):
         return self
