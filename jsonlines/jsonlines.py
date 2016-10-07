@@ -84,28 +84,33 @@ class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
 
+    The first argument must be an iterable that yields JSON encoded
+    strings. Usually this will be a readable file-like object, such an
+    open file or ``io.TextIO`` instances, but it can also be something
+    else as long as it yields strings when iterated over.
+
     The `loads` argument can be used to replace the standard json
     decoder. If specified, it must be a callable that accepts a
     (unicode) string and returns the decoded object.
 
     Instances are iterable and can be used as a context manager.
 
-    :param file-like fp: readable file-like object
+    :param file-like iterable: iterable yielding lines as strings
     :param callable loads: custom json decoder callable
     """
-    def __init__(self, fp, loads=None):
-        self._fp = fp
+    def __init__(self, iterable, loads=None):
+        self._fp = iterable
         self._should_close_fp = False
         self._closed = False
         if loads is None:
             loads = json.loads
         self._loads = loads
         self._lineno = 0
-        self._line_iter = iter(fp)
+        self._line_iter = iter(iterable)
 
     def read(self, type=None, allow_none=False, skip_empty=False):
         """
-        Read and decode a line from the underlying file-like object.
+        Read and decode a line.
 
         The optional `type` argument specifies the expected data type.
         Supported types are ``dict``, ``list``, ``str``, ``int``,

@@ -46,7 +46,7 @@ Features
 
 * Flexible :py:class:`~jsonlines.Writer`
 
-  * wraps a file-like object
+  * wraps a file-like object or any other iterable yielding lines
   * can produce compact output
   * can sort keys (deterministic output)
   * can flush the underlying stream after each write
@@ -84,8 +84,7 @@ simple::
   with jsonlines.open('output.jsonl', mode='w') as writer:
       writer.write(...)
 
-
-A :py:class:`Reader` wraps a file-like object::
+A :py:class:`Reader` typically wraps a file-like object::
 
   fp = io.BytesIO(...)  # readable file-like object
   reader = jsonlines.Reader(fp)
@@ -93,6 +92,12 @@ A :py:class:`Reader` wraps a file-like object::
   second = reader.read()
   reader.close()
   fp.close()
+
+Instead of a file-like object, any iterable yielding JSON encoded
+strings can be provided::
+
+  lines = ['1', '2', '3']
+  reader = jsonlines.Reader(lines)
 
 While the :py:meth:`Reader.read` method can be used directly, it is
 often more convenient to use iteration::
@@ -106,9 +111,8 @@ calling :py:meth:`Reader.iter()` instead::
   for obj in reader.iter(type=dict, skip_invalid=True):
       ...
 
-
-A :py:class:`Writer` also wraps a file-like object, and can
-write both a single object, or multiple objects at once::
+A :py:class:`Writer` wraps a file-like object, and can write a single
+object, or multiple objects at once::
 
   fp = io.BytesIO()  # writable file-like object
   writer = jsonlines.Writer(fp)
@@ -122,8 +126,8 @@ write both a single object, or multiple objects at once::
   fp.close()
 
 Both readers and writers can be used as a context manager, in which
-case they will be closed automatically. Note that this does not close
-the passed-in file-like object since that object‘s life span is
+case they will be closed automatically. Note that this will not close
+a passed-in file-like object since that object’s life span is
 controlled by the calling code. Example::
 
   fp = io.BytesIO()  # file-like object
