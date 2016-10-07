@@ -32,7 +32,7 @@ Features
 
 * Flexible :py:class:`~jsonlines.Reader`
 
-  * wraps a file-like object
+  * wraps a file-like object or any other iterable yielding lines
   * can read lines directly via the
     :py:meth:`~jsonlines.Reader.read()` method
   * can be used as an iterator, either directly or via the
@@ -46,7 +46,7 @@ Features
 
 * Flexible :py:class:`~jsonlines.Writer`
 
-  * wraps a file-like object or any other iterable yielding lines
+  * wraps a file-like object
   * can produce compact output
   * can sort keys (deterministic output)
   * can flush the underlying stream after each write
