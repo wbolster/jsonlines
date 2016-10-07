@@ -51,9 +51,15 @@ def test_writer_binary():
 
 
 def test_closing():
+    reader = jsonlines.Reader([])
+    reader.close()
+    with pytest.raises(RuntimeError):
+        reader.read()
     writer = jsonlines.Writer(io.BytesIO())
     writer.close()
     writer.close()  # no-op
+    with pytest.raises(RuntimeError):
+        writer.write(123)
 
 
 def test_invalid_lines():

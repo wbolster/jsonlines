@@ -132,6 +132,8 @@ class Reader(ReaderWriterBase):
         If `skip_empty` is set to ``True``, empty lines and lines
         containing only whitespace are silently skipped.
         """
+        if self._closed:
+            raise RuntimeError('reader is closed')
         if type is not None and type not in TYPE_MAPPING:
             raise ValueError("invalid type specified")
 
@@ -259,6 +261,8 @@ class Writer(ReaderWriterBase):
 
         :param obj: the object to encode and write
         """
+        if self._closed:
+            raise RuntimeError('writer is closed')
         line = self._dumps(obj)
         # On Python 2, the JSON module has the nasty habit of returning
         # either a byte string or unicode string, depending on whether
