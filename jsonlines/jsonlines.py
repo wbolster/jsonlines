@@ -4,7 +4,10 @@ jsonlines implementation
 
 import numbers
 import io
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 import six
 
