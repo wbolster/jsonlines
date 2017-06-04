@@ -35,6 +35,9 @@ class InvalidLineError(Error, ValueError):
 
     The original line itself is stored on the exception instance as the
     ``.line`` attribute, and the line number as ``.lineno``.
+
+    This class subclasses both ``jsonlines.Error`` and the built-in
+    ``ValueError``.
     """
     #: The invalid line
     line = None
