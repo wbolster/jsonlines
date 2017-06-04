@@ -177,6 +177,12 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
+* 1.1.1, released at 2017-06-04
+
+  * include licensing information in sdist
+    (`#27 <https://github.com/wbolster/jsonlines/issues/27>`_)
+  * doc tweaks
+
 * 1.1.0, released at 2016-10-07
 
   * rename first argument to :py:class:`Reader` since it is not
