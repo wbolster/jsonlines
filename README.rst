@@ -13,3 +13,6 @@ and ndjson_ data.
 * Python Package Index (PyPI): https://pypi.python.org/pypi/jsonlines/
 
 * Source code and issue tracker: https://github.com/wbolster/jsonlines
+
+.. image:: https://travis-ci.org/wbolster/jsonlines.svg?branch=master
+   :target: https://travis-ci.org/wbolster/jsonlines
