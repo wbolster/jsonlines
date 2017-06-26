@@ -179,6 +179,11 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
+* 1.1.2, released at 2017-06-26
+
+  * documentation tweaks
+  * enable building universal wheels
+
 * 1.1.1, released at 2017-06-04
 
   * include licensing information in sdist
