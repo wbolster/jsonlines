@@ -8,7 +8,7 @@ and ndjson_ data.
 .. _jsonlines: http://jsonlines.org/
 .. _ndjson: http://ndjson.org/
 
-* Documentation: https://jsonlines.readthedocs.org/
+* Documentation: https://jsonlines.readthedocs.io/
 
 * Python Package Index (PyPI): https://pypi.python.org/pypi/jsonlines/
 
