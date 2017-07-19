@@ -114,8 +114,7 @@ class Reader(ReaderWriterBase):
         if loads is None:
             loads = json.loads
         self._loads = loads
-        self._lineno = 0
-        self._line_iter = iter(iterable)
+        self._line_iter = enumerate(iterable, 1)
 
     def read(self, type=None, allow_none=False, skip_empty=False):
         """
@@ -140,13 +139,12 @@ class Reader(ReaderWriterBase):
         if type is not None and type not in TYPE_MAPPING:
             raise ValueError("invalid type specified")
 
-        line = next(self._line_iter, '')
-        while skip_empty and line and not line.strip():
-            self._lineno += 1
-            line = next(self._line_iter, '')
-        if not line:
-            raise EOFError
-        self._lineno += 1
+        try:
+            lineno, line = next(self._line_iter)
+            while skip_empty and not line.rstrip():
+                lineno, line = next(self._line_iter)
+        except StopIteration:
+            six.raise_from(EOFError, None)
 
         if isinstance(line, six.binary_type):
             try:
@@ -154,7 +152,7 @@ class Reader(ReaderWriterBase):
             except UnicodeDecodeError as orig_exc:
                 exc = InvalidLineError(
                     "line is not valid utf-8: {}".format(orig_exc),
-                    line, self._lineno)
+                    line, lineno)
                 six.raise_from(exc, orig_exc)
 
         try:
@@ -162,14 +160,14 @@ class Reader(ReaderWriterBase):
         except ValueError as orig_exc:
             exc = InvalidLineError(
                 "line contains invalid json: {}".format(orig_exc),
-                line, self._lineno)
+                line, lineno)
             six.raise_from(exc, orig_exc)
 
         if value is None:
             if allow_none:
                 return None
             raise InvalidLineError(
-                "line contains null value", line, self._lineno)
+                "line contains null value", line, lineno)
 
         if type is not None:
             valid = isinstance(value, TYPE_MAPPING[type])
@@ -177,7 +175,7 @@ class Reader(ReaderWriterBase):
                 valid = valid and not isinstance(value, bool)
             if not valid:
                 raise InvalidLineError(
-                    "line does not match requested type", line, self._lineno)
+                    "line does not match requested type", line, lineno)
 
         return value
 

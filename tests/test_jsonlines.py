@@ -80,6 +80,18 @@ def test_skip_invalid():
     assert next(it) == 34
 
 
+def test_empty_strings_in_iterable():
+    input = ['123', '', '456']
+    it = iter(jsonlines.Reader(input))
+    assert next(it) == 123
+    with pytest.raises(jsonlines.InvalidLineError):
+        next(it)
+    with pytest.raises(StopIteration):
+        next(it)
+    it = jsonlines.Reader(input).iter(skip_empty=True)
+    assert list(it) == [123, 456]
+
+
 def test_invalid_utf8():
     with jsonlines.Reader([b'\xff\xff']) as reader:
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
