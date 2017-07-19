@@ -179,6 +179,11 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
+* 1.1.3, released at 2017-07-19
+
+   * fix incomplete iteration when given list containing empty strings
+     (`#30 <https://github.com/wbolster/jsonlines/issues/30>`_)
+
 * 1.1.2, released at 2017-06-26
 
   * documentation tweaks
