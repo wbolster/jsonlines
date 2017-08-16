@@ -177,6 +177,16 @@ def test_open_writing():
     assert fp.name in repr(writer)
 
 
+def test_open_and_append_writing():
+    with tempfile.NamedTemporaryFile("w+b") as fp:
+        with jsonlines.open(fp.name, mode='w') as writer:
+            writer.write(123)
+        with jsonlines.open(fp.name, mode='a') as writer:
+            writer.write(456)
+        assert fp.read() == b"123\n456\n"
+    assert fp.name in repr(writer)
+
+
 def test_open_invalid_mode():
     with pytest.raises(ValueError) as excinfo:
         jsonlines.open('foo', mode='foo')
