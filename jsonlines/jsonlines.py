@@ -320,7 +320,7 @@ def open(name, mode='r', **kwargs):
 
     :param file-like fp: name of the file to open
     :param str mode: whether to open the file for reading (``r``),
-        writing (``w``) or append (``a``).
+        writing (``w``) or appending (``a``).
     :param \*\*kwargs: additional arguments, forwarded to the reader or writer
     """
     if mode not in {'r', 'w', 'a'}:
