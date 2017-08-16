@@ -179,6 +179,12 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
+* 1.2.x, not yet released
+
+  * allow ``mode='a'`` in :py:func:`~jsonlines.open()`
+    to allow appending to an existing file
+    (`#31 <https://github.com/wbolster/jsonlines/pull/31>`_)
+
 * 1.1.3, released at 2017-07-19
 
  * fix incomplete iteration when given list containing empty strings
