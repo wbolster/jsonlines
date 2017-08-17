@@ -179,7 +179,7 @@ The source code and issue tracker for this package can be found on Github:
 Version history
 ===============
 
-* 1.2.x, not yet released
+* 1.2.0, released at 2017-08-17
 
   * allow ``mode='a'`` in :py:func:`~jsonlines.open()`
     to allow appending to an existing file

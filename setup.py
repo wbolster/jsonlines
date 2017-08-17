@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fp:
 
 setup(
     name="jsonlines",
-    version="1.1.3",
+    version="1.2.0",
     description="Library with helpers for the jsonlines file format",
     long_description=long_description,
     author="Wouter Bolsterlee",
