@@ -1,6 +1,8 @@
 """
 Tests for the jsonlines library.
 """
+import os, sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import collections
 import io
