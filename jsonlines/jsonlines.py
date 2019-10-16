@@ -320,11 +320,11 @@ def open(name, mode='r', **kwargs):
 
     :param file-like fp: name of the file to open
     :param str mode: whether to open the file for reading (``r``),
-        writing (``w``) or appending (``a``).
+        writing (``w``), appending (``a``), or reading and writing (``w+``).
     :param **kwargs: additional arguments, forwarded to the reader or writer
     """
-    if mode not in {'r', 'w', 'a'}:
-        raise ValueError("'mode' must be either 'r', 'w', or 'a'")
+    if mode not in {'r', 'w', 'a', 'w+'}:
+        raise ValueError("'mode' must be either 'r', 'w', 'w+' or 'a'")
     fp = io.open(name, mode=mode + 't', encoding='utf-8')
     if mode == 'r':
         instance = Reader(fp, **kwargs)

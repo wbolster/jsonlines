@@ -185,6 +185,13 @@ def test_open_and_append_writing():
             writer.write(456)
         assert fp.read() == b"123\n456\n"
 
+    
+def test_writing_and_reading():
+    with tempfile.NamedTemporaryFile("w+b") as fp:
+        with jsonlines.open(fp.name, mode='w+') as writer:
+            writer.write(123)
+        assert fp.read() == b"123\n"
+
 
 def test_open_invalid_mode():
     with pytest.raises(ValueError) as excinfo:
