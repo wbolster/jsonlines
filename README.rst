@@ -1,3 +1,12 @@
+.. image:: https://travis-ci.org/wbolster/jsonlines.svg?branch=master
+   :target: https://travis-ci.org/wbolster/jsonlines
+
+.. image:: https://pepy.tech/badge/jsonlines
+   :target: https://pepy.tech/project/jsonlines
+
+.. image:: https://pepy.tech/badge/jsonlines/month
+   :target: https://pepy.tech/project/jsonlines
+
 =========
 jsonlines
 =========
@@ -14,5 +23,3 @@ and ndjson_ data.
 
 * Source code and issue tracker: https://github.com/wbolster/jsonlines
 
-.. image:: https://travis-ci.org/wbolster/jsonlines.svg?branch=master
-   :target: https://travis-ci.org/wbolster/jsonlines
