@@ -2,9 +2,9 @@
 jsonlines implementation
 """
 
-import numbers
 import io
 import json
+import numbers
 
 import six
 

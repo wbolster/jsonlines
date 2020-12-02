@@ -4,17 +4,17 @@ Module for the jsonlines data format.
 
 # expose only public api
 from .jsonlines import (
+    Error,
+    InvalidLineError,
     Reader,
     Writer,
     open,
-    Error,
-    InvalidLineError,
 )
 
 __all__ = [
+    "Error",
+    "InvalidLineError",
     "Reader",
     "Writer",
     "open",
-    "Error",
-    "InvalidLineError",
 ]
