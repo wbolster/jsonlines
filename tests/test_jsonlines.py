@@ -63,7 +63,7 @@ def test_closing():
 
 
 def test_invalid_lines():
-    data = u'[1, 2'
+    data = '[1, 2'
     with jsonlines.Reader(io.StringIO(data)) as reader:
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read()
@@ -73,7 +73,7 @@ def test_invalid_lines():
 
 
 def test_skip_invalid():
-    fp = io.StringIO(u"12\ninvalid\n34")
+    fp = io.StringIO("12\ninvalid\n34")
     reader = jsonlines.Reader(fp)
     it = reader.iter(skip_invalid=True)
     assert next(it) == 12
@@ -113,7 +113,7 @@ def test_empty_lines():
 
 
 def test_typed_reads():
-    with jsonlines.Reader(io.StringIO(u'12\n"foo"\n')) as reader:
+    with jsonlines.Reader(io.StringIO('12\n"foo"\n')) as reader:
         assert reader.read(type=int) == 12
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read(type=float)
@@ -123,12 +123,12 @@ def test_typed_reads():
 
 
 def test_typed_iteration():
-    fp = io.StringIO(u'1\n2\n')
+    fp = io.StringIO('1\n2\n')
     with jsonlines.Reader(fp) as reader:
         actual = list(reader.iter(type=int))
         assert actual == [1, 2]
 
-    fp = io.StringIO(u'1\n2\n')
+    fp = io.StringIO('1\n2\n')
     with jsonlines.Reader(fp) as reader:
         it = reader.iter(type=str)
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:

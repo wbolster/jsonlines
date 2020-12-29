@@ -2,7 +2,7 @@
 jsonlines implementation
 """
 
-import io
+import builtins
 import json
 import numbers
 
@@ -12,8 +12,8 @@ import six
 TYPE_MAPPING = {
     dict: dict,
     list: list,
-    str: six.text_type,
-    int: six.integer_types,
+    str: str,
+    int: int,
     float: float,
     numbers.Number: numbers.Number,
     bool: bool,
@@ -46,13 +46,13 @@ class InvalidLineError(Error, ValueError):
     lineno = None
 
     def __init__(self, msg, line, lineno):
-        msg = "{} (line {})".format(msg, lineno)
+        msg = f"{msg} (line {lineno})"
         self.line = line.rstrip()
         self.lineno = lineno
-        super(InvalidLineError, self).__init__(msg)
+        super().__init__(msg)
 
 
-class ReaderWriterBase(object):
+class ReaderWriterBase:
     """
     Base class with shared behaviour for both the reader and writer.
     """
@@ -144,24 +144,24 @@ class Reader(ReaderWriterBase):
             while skip_empty and not line.rstrip():
                 lineno, line = next(self._line_iter)
         except StopIteration:
-            six.raise_from(EOFError, None)
+            raise EOFError from None
 
-        if isinstance(line, six.binary_type):
+        if isinstance(line, bytes):
             try:
                 line = line.decode('utf-8')
             except UnicodeDecodeError as orig_exc:
                 exc = InvalidLineError(
-                    "line is not valid utf-8: {}".format(orig_exc),
+                    f"line is not valid utf-8: {orig_exc}",
                     line, lineno)
-                six.raise_from(exc, orig_exc)
+                raise exc from orig_exc
 
         try:
             value = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
-                "line contains invalid json: {}".format(orig_exc),
+                f"line contains invalid json: {orig_exc}",
                 line, lineno)
-            six.raise_from(exc, orig_exc)
+            raise exc from orig_exc
 
         if value is None:
             if allow_none:
@@ -247,7 +247,7 @@ class Writer(ReaderWriterBase):
             self, fp, compact=False, sort_keys=False, dumps=None, flush=False):
         self._closed = False
         try:
-            fp.write(u'')
+            fp.write('')
             self._fp_is_binary = False
         except TypeError:
             self._fp_is_binary = True
@@ -275,15 +275,15 @@ class Writer(ReaderWriterBase):
         # the serialised structure can be encoded using ASCII only, so
         # this means this code needs to handle all combinations.
         if self._fp_is_binary:
-            if not isinstance(line, six.binary_type):
+            if not isinstance(line, bytes):
                 line = line.encode('utf-8')
             self._fp.write(line)
             self._fp.write(b'\n')
         else:
-            if not isinstance(line, six.text_type):
+            if not isinstance(line, str):
                 line = line.decode('ascii')  # For Python 2.
             self._fp.write(line)
-            self._fp.write(u'\n')
+            self._fp.write('\n')
         if self._flush:
             self._fp.flush()
 
@@ -325,7 +325,7 @@ def open(name, mode='r', **kwargs):
     """
     if mode not in {'r', 'w', 'a'}:
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
-    fp = io.open(name, mode=mode + 't', encoding='utf-8')
+    fp = builtins.open(name, mode=mode + 't', encoding='utf-8')
     if mode == 'r':
         instance = Reader(fp, **kwargs)
     else:
