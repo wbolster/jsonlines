@@ -62,7 +62,7 @@ Installation
 
   pip install jsonlines
 
-The supported Python versions are 3.5+ and Python 2.7.
+The supported Python versions are 3.6+.
 
 
 User guide
@@ -171,7 +171,7 @@ API
 Contributing
 ============
 
-The source code and issue tracker for this package can be found on Github:
+The source code and issue tracker for this package can be found on GitHub:
 
   https://github.com/wbolster/jsonlines
 
