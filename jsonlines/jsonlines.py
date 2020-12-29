@@ -6,8 +6,6 @@ import builtins
 import json
 import numbers
 
-import six
-
 
 TYPE_MAPPING = {
     dict: dict,
