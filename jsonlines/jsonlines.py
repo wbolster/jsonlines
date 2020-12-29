@@ -7,14 +7,14 @@ import json
 import numbers
 
 
-TYPE_MAPPING = {
-    dict: dict,
-    list: list,
-    str: str,
-    int: int,
-    float: float,
-    numbers.Number: numbers.Number,
-    bool: bool,
+VALID_TYPES = {
+    bool,
+    dict,
+    float,
+    int,
+    list,
+    numbers.Number,
+    str,
 }
 
 
@@ -134,7 +134,7 @@ class Reader(ReaderWriterBase):
         """
         if self._closed:
             raise RuntimeError('reader is closed')
-        if type is not None and type not in TYPE_MAPPING:
+        if type is not None and type not in VALID_TYPES:
             raise ValueError("invalid type specified")
 
         try:
@@ -168,7 +168,7 @@ class Reader(ReaderWriterBase):
                 "line contains null value", line, lineno)
 
         if type is not None:
-            valid = isinstance(value, TYPE_MAPPING[type])
+            valid = isinstance(value, type)
             if type in (int, numbers.Number):
                 valid = valid and not isinstance(value, bool)
             if not valid:
