@@ -268,18 +268,11 @@ class Writer(ReaderWriterBase):
         if self._closed:
             raise RuntimeError('writer is closed')
         line = self._dumps(obj)
-        # On Python 2, the JSON module has the nasty habit of returning
-        # either a byte string or unicode string, depending on whether
-        # the serialised structure can be encoded using ASCII only, so
-        # this means this code needs to handle all combinations.
         if self._fp_is_binary:
-            if not isinstance(line, bytes):
-                line = line.encode('utf-8')
+            line = line.encode('utf-8')
             self._fp.write(line)
             self._fp.write(b'\n')
         else:
-            if not isinstance(line, str):
-                line = line.decode('ascii')  # For Python 2.
             self._fp.write(line)
             self._fp.write('\n')
         if self._flush:
