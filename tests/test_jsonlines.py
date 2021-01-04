@@ -11,15 +11,15 @@ import pytest
 
 
 SAMPLE_BYTES = b'{"a": 1}\n{"b": 2}\n'
-SAMPLE_TEXT = SAMPLE_BYTES.decode('utf-8')
+SAMPLE_TEXT = SAMPLE_BYTES.decode("utf-8")
 
 
 def test_reader():
     fp = io.BytesIO(SAMPLE_BYTES)
     with jsonlines.Reader(fp) as reader:
         it = iter(reader)
-        assert next(it) == {'a': 1}
-        assert next(it) == {'b': 2}
+        assert next(it) == {"a": 1}
+        assert next(it) == {"b": 2}
         with pytest.raises(StopIteration):
             next(it)
         with pytest.raises(EOFError):
@@ -27,26 +27,28 @@ def test_reader():
 
 
 def test_reading_from_iterable():
-    with jsonlines.Reader(['1', b'{}']) as reader:
+    with jsonlines.Reader(["1", b"{}"]) as reader:
         assert list(reader) == [1, {}]
-    assert 'wrapping <list at ' in repr(reader)
+    assert "wrapping <list at " in repr(reader)
 
 
 def test_writer_text():
     fp = io.StringIO()
     with jsonlines.Writer(fp) as writer:
-        writer.write({'a': 1})
-        writer.write({'b': 2})
+        writer.write({"a": 1})
+        writer.write({"b": 2})
     assert fp.getvalue() == SAMPLE_TEXT
 
 
 def test_writer_binary():
     fp = io.BytesIO()
     with jsonlines.Writer(fp) as writer:
-        writer.write_all([
-            {'a': 1},
-            {'b': 2},
-        ])
+        writer.write_all(
+            [
+                {"a": 1},
+                {"b": 2},
+            ]
+        )
     assert fp.getvalue() == SAMPLE_BYTES
 
 
@@ -63,7 +65,7 @@ def test_closing():
 
 
 def test_invalid_lines():
-    data = '[1, 2'
+    data = "[1, 2"
     with jsonlines.Reader(io.StringIO(data)) as reader:
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read()
@@ -81,7 +83,7 @@ def test_skip_invalid():
 
 
 def test_empty_strings_in_iterable():
-    input = ['123', '', '456']
+    input = ["123", "", "456"]
     it = iter(jsonlines.Reader(input))
     assert next(it) == 123
     with pytest.raises(jsonlines.InvalidLineError):
@@ -93,10 +95,10 @@ def test_empty_strings_in_iterable():
 
 
 def test_invalid_utf8():
-    with jsonlines.Reader([b'\xff\xff']) as reader:
+    with jsonlines.Reader([b"\xff\xff"]) as reader:
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read()
-        assert 'line is not valid utf-8' in str(excinfo.value)
+        assert "line is not valid utf-8" in str(excinfo.value)
 
 
 def test_empty_lines():
@@ -123,12 +125,12 @@ def test_typed_reads():
 
 
 def test_typed_iteration():
-    fp = io.StringIO('1\n2\n')
+    fp = io.StringIO("1\n2\n")
     with jsonlines.Reader(fp) as reader:
         actual = list(reader.iter(type=int))
         assert actual == [1, 2]
 
-    fp = io.StringIO('1\n2\n')
+    fp = io.StringIO("1\n2\n")
     with jsonlines.Reader(fp) as reader:
         it = reader.iter(type=str)
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
@@ -140,25 +142,29 @@ def test_typed_iteration():
 def test_writer_flags():
     fp = io.BytesIO()
     with jsonlines.Writer(fp, compact=True, sort_keys=True) as writer:
-        writer.write(collections.OrderedDict([
-            ('b', 2),
-            ('a', 1),
-        ]))
+        writer.write(
+            collections.OrderedDict(
+                [
+                    ("b", 2),
+                    ("a", 1),
+                ]
+            )
+        )
     assert fp.getvalue() == b'{"a":1,"b":2}\n'
 
 
 def test_custom_dumps():
     fp = io.BytesIO()
-    writer = jsonlines.Writer(fp, dumps=lambda obj: 'oh hai')
+    writer = jsonlines.Writer(fp, dumps=lambda obj: "oh hai")
     with writer:
         writer.write({})
-    assert fp.getvalue() == b'oh hai\n'
+    assert fp.getvalue() == b"oh hai\n"
 
 
 def test_custom_loads():
     fp = io.BytesIO(b"{}\n")
-    with jsonlines.Reader(fp, loads=lambda s: 'uh what') as reader:
-        assert reader.read() == 'uh what'
+    with jsonlines.Reader(fp, loads=lambda s: "uh what") as reader:
+        assert reader.read() == "uh what"
 
 
 def test_open_reading():
@@ -171,7 +177,7 @@ def test_open_reading():
 
 def test_open_writing():
     with tempfile.NamedTemporaryFile("w+b") as fp:
-        with jsonlines.open(fp.name, mode='w') as writer:
+        with jsonlines.open(fp.name, mode="w") as writer:
             writer.write(123)
         assert fp.read() == b"123\n"
     assert fp.name in repr(writer)
@@ -179,14 +185,14 @@ def test_open_writing():
 
 def test_open_and_append_writing():
     with tempfile.NamedTemporaryFile("w+b") as fp:
-        with jsonlines.open(fp.name, mode='w') as writer:
+        with jsonlines.open(fp.name, mode="w") as writer:
             writer.write(123)
-        with jsonlines.open(fp.name, mode='a') as writer:
+        with jsonlines.open(fp.name, mode="a") as writer:
             writer.write(456)
         assert fp.read() == b"123\n456\n"
 
 
 def test_open_invalid_mode():
     with pytest.raises(ValueError) as excinfo:
-        jsonlines.open('foo', mode='foo')
-    assert 'mode' in str(excinfo.value)
+        jsonlines.open("foo", mode="foo")
+    assert "mode" in str(excinfo.value)

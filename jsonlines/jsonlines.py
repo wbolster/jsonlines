@@ -19,7 +19,10 @@ VALID_TYPES = {
 
 
 class Error(Exception):
-    """Base error class."""
+    """
+    Base error class.
+    """
+
     pass
 
 
@@ -37,6 +40,7 @@ class InvalidLineError(Error, ValueError):
     This class subclasses both ``jsonlines.Error`` and the built-in
     ``ValueError``.
     """
+
     #: The invalid line
     line = None
 
@@ -54,6 +58,7 @@ class ReaderWriterBase:
     """
     Base class with shared behaviour for both the reader and writer.
     """
+
     def close(self):
         """
         Close this reader/writer.
@@ -69,15 +74,14 @@ class ReaderWriterBase:
             self._fp.close()
 
     def __repr__(self):
-        name = getattr(self._fp, 'name', None)
+        name = getattr(self._fp, "name", None)
         if name:
             wrapping = repr(name)
         else:
-            wrapping = '<{} at 0x{:x}>'.format(
-                type(self._fp).__name__,
-                id(self._fp))
-        return '<jsonlines.{} at 0x{:x} wrapping {}>'.format(
-            type(self).__name__, id(self), wrapping)
+            wrapping = "<{} at 0x{:x}>".format(type(self._fp).__name__, id(self._fp))
+        return "<jsonlines.{} at 0x{:x} wrapping {}>".format(
+            type(self).__name__, id(self), wrapping
+        )
 
     def __enter__(self):
         return self
@@ -105,6 +109,7 @@ class Reader(ReaderWriterBase):
     :param file-like iterable: iterable yielding lines as strings
     :param callable loads: custom json decoder callable
     """
+
     def __init__(self, iterable, loads=None):
         self._fp = iterable
         self._should_close_fp = False
@@ -133,7 +138,7 @@ class Reader(ReaderWriterBase):
         containing only whitespace are silently skipped.
         """
         if self._closed:
-            raise RuntimeError('reader is closed')
+            raise RuntimeError("reader is closed")
         if type is not None and type not in VALID_TYPES:
             raise ValueError("invalid type specified")
 
@@ -146,26 +151,25 @@ class Reader(ReaderWriterBase):
 
         if isinstance(line, bytes):
             try:
-                line = line.decode('utf-8')
+                line = line.decode("utf-8")
             except UnicodeDecodeError as orig_exc:
                 exc = InvalidLineError(
-                    f"line is not valid utf-8: {orig_exc}",
-                    line, lineno)
+                    f"line is not valid utf-8: {orig_exc}", line, lineno
+                )
                 raise exc from orig_exc
 
         try:
             value = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
-                f"line contains invalid json: {orig_exc}",
-                line, lineno)
+                f"line contains invalid json: {orig_exc}", line, lineno
+            )
             raise exc from orig_exc
 
         if value is None:
             if allow_none:
                 return None
-            raise InvalidLineError(
-                "line contains null value", line, lineno)
+            raise InvalidLineError("line contains null value", line, lineno)
 
         if type is not None:
             valid = isinstance(value, type)
@@ -173,12 +177,12 @@ class Reader(ReaderWriterBase):
                 valid = valid and not isinstance(value, bool)
             if not valid:
                 raise InvalidLineError(
-                    "line does not match requested type", line, lineno)
+                    "line does not match requested type", line, lineno
+                )
 
         return value
 
-    def iter(self, type=None, allow_none=False, skip_empty=False,
-             skip_invalid=False):
+    def iter(self, type=None, allow_none=False, skip_empty=False, skip_invalid=False):
         """
         Iterate over all lines.
 
@@ -197,9 +201,8 @@ class Reader(ReaderWriterBase):
             while True:
                 try:
                     yield self.read(
-                        type=type,
-                        allow_none=allow_none,
-                        skip_empty=skip_empty)
+                        type=type, allow_none=allow_none, skip_empty=skip_empty
+                    )
                 except InvalidLineError:
                     if not skip_invalid:
                         raise
@@ -241,18 +244,18 @@ class Writer(ReaderWriterBase):
     :param bool flush: whether to flush the file-like object after
         writing each line
     """
-    def __init__(
-            self, fp, compact=False, sort_keys=False, dumps=None, flush=False):
+
+    def __init__(self, fp, compact=False, sort_keys=False, dumps=None, flush=False):
         self._closed = False
         try:
-            fp.write('')
+            fp.write("")
             self._fp_is_binary = False
         except TypeError:
             self._fp_is_binary = True
         if dumps is None:
             encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort_keys)
             if compact:
-                encoder_kwargs.update(separators=(',', ':'))
+                encoder_kwargs.update(separators=(",", ":"))
             dumps = json.JSONEncoder(**encoder_kwargs).encode
         self._fp = fp
         self._should_close_fp = False
@@ -266,15 +269,15 @@ class Writer(ReaderWriterBase):
         :param obj: the object to encode and write
         """
         if self._closed:
-            raise RuntimeError('writer is closed')
+            raise RuntimeError("writer is closed")
         line = self._dumps(obj)
         if self._fp_is_binary:
-            line = line.encode('utf-8')
+            line = line.encode("utf-8")
             self._fp.write(line)
-            self._fp.write(b'\n')
+            self._fp.write(b"\n")
         else:
             self._fp.write(line)
-            self._fp.write('\n')
+            self._fp.write("\n")
         if self._flush:
             self._fp.flush()
 
@@ -288,7 +291,7 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-def open(name, mode='r', **kwargs):
+def open(name, mode="r", **kwargs):
     """
     Open a jsonlines file for reading or writing.
 
@@ -314,10 +317,10 @@ def open(name, mode='r', **kwargs):
         writing (``w``) or appending (``a``).
     :param **kwargs: additional arguments, forwarded to the reader or writer
     """
-    if mode not in {'r', 'w', 'a'}:
+    if mode not in {"r", "w", "a"}:
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
-    fp = builtins.open(name, mode=mode + 't', encoding='utf-8')
-    if mode == 'r':
+    fp = builtins.open(name, mode=mode + "t", encoding="utf-8")
+    if mode == "r":
         instance = Reader(fp, **kwargs)
     else:
         instance = Writer(fp, **kwargs)
