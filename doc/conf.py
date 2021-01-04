@@ -1,7 +1,7 @@
 extensions = [
-    'sphinx.ext.autodoc',
+    "sphinx.ext.autodoc",
 ]
 
-master_doc = 'index'
-project = 'jsonlines'
-copyright = 'Wouter Bolsterlee'
+master_doc = "index"
+project = "jsonlines"
+copyright = "wouter bolsterlee"

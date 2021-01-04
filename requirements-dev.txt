@@ -1,6 +1,5 @@
+black
 flake8
-pep8-naming
 pytest>=3
 pytest-cov
-pytest-pep8
 sphinx
