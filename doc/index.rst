@@ -179,6 +179,13 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
+* 2.0.0, released at 2021-01-04
+
+  * drop support for end-of-life Python versions; this package is now
+    Python 3.6+ only.
+    (`#54 <https://github.com/wbolster/jsonlines/pull/54>`_,
+    `#51 <https://github.com/wbolster/jsonlines/pull/51>`_)
+
 * 1.2.0, released at 2017-08-17
 
   * allow ``mode='a'`` in :py:func:`~jsonlines.open()`
@@ -212,7 +219,7 @@ Version history
 
 * 1.0.0, released at 2016-10-05
 
-  * minimum python versions are python 3.4+ and python2.7+
+  * minimum Python versions are Python 3.4+ and Python 2.7+
   * implemented lots of configuration options
   * add proper exceptions handling
   * add proper documentation
