@@ -7,6 +7,9 @@
 .. image:: https://pepy.tech/badge/jsonlines/month
    :target: https://pepy.tech/project/jsonlines
 
+.. image:: https://anaconda.org/anaconda/anaconda/badges/installer/conda.svg
+   :target: https://anaconda.org/anaconda/jsonlines
+
 =========
 jsonlines
 =========
