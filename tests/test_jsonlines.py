@@ -196,3 +196,20 @@ def test_open_invalid_mode():
     with pytest.raises(ValueError) as excinfo:
         jsonlines.open("foo", mode="foo")
     assert "mode" in str(excinfo.value)
+
+
+def test_write_to_reader():
+    with tempfile.NamedTemporaryFile("w+b") as fp:
+        with jsonlines.open(fp.name) as reader:
+            with pytest.raises(io.UnsupportedOperation):
+                reader.write(1)
+            with pytest.raises(io.UnsupportedOperation):
+                reader.write_all([1, 2])
+
+
+def test_read_of_writer():
+    with jsonlines.open("foo", mode="w") as writer:
+        with pytest.raises(io.UnsupportedOperation):
+            writer.read()
+        with pytest.raises(io.UnsupportedOperation):
+            writer.iter()
