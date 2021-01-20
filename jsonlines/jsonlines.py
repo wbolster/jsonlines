@@ -3,7 +3,6 @@ jsonlines implementation
 """
 
 import builtins
-import io
 import json
 import numbers
 
@@ -74,59 +73,6 @@ class ReaderWriterBase:
         if self._should_close_fp:
             self._fp.close()
 
-    def read(self, type=None, allow_none=False, skip_empty=False):
-        """
-        Read and decode a line.
-
-        The optional `type` argument specifies the expected data type.
-        Supported types are ``dict``, ``list``, ``str``, ``int``,
-        ``float``, ``numbers.Number`` (accepts both integers and
-        floats), and ``bool``. When specified, non-conforming lines
-        result in :py:exc:`InvalidLineError`.
-
-        By default, input lines containing ``null`` (in JSON) are
-        considered invalid, and will cause :py:exc:`InvalidLineError`.
-        The `allow_none` argument can be used to change this behaviour,
-        in which case ``None`` will be returned instead.
-
-        If `skip_empty` is set to ``True``, empty lines and lines
-        containing only whitespace are silently skipped.
-        """
-        raise NotImplementedError()
-
-    def iter(self, type=None, allow_none=False, skip_empty=False, skip_invalid=False):
-        """
-        Iterate over all lines.
-
-        This is the iterator equivalent to repeatedly calling
-        :py:meth:`~Reader.read()`. If no arguments are specified, this
-        is the same as directly iterating over this :py:class:`Reader`
-        instance.
-
-        When `skip_invalid` is set to ``True``, invalid lines will be
-        silently ignored.
-
-        See :py:meth:`~Reader.read()` for a description of the other
-        arguments.
-        """
-        raise NotImplementedError()
-
-    def write(self, obj):
-        """
-        Encode and write a single object.
-
-        :param obj: the object to encode and write
-        """
-        raise NotImplementedError()
-
-    def write_all(self, iterable):
-        """
-        Encode and write multiple objects.
-
-        :param iterable: an iterable of objects
-        """
-        raise NotImplementedError()
-
     def __repr__(self):
         name = getattr(self._fp, "name", None)
         if name:
@@ -174,6 +120,23 @@ class Reader(ReaderWriterBase):
         self._line_iter = enumerate(iterable, 1)
 
     def read(self, type=None, allow_none=False, skip_empty=False):
+        """
+        Read and decode a line.
+
+        The optional `type` argument specifies the expected data type.
+        Supported types are ``dict``, ``list``, ``str``, ``int``,
+        ``float``, ``numbers.Number`` (accepts both integers and
+        floats), and ``bool``. When specified, non-conforming lines
+        result in :py:exc:`InvalidLineError`.
+
+        By default, input lines containing ``null`` (in JSON) are
+        considered invalid, and will cause :py:exc:`InvalidLineError`.
+        The `allow_none` argument can be used to change this behaviour,
+        in which case ``None`` will be returned instead.
+
+        If `skip_empty` is set to ``True``, empty lines and lines
+        containing only whitespace are silently skipped.
+        """
         if self._closed:
             raise RuntimeError("reader is closed")
         if type is not None and type not in VALID_TYPES:
@@ -220,6 +183,20 @@ class Reader(ReaderWriterBase):
         return value
 
     def iter(self, type=None, allow_none=False, skip_empty=False, skip_invalid=False):
+        """
+        Iterate over all lines.
+
+        This is the iterator equivalent to repeatedly calling
+        :py:meth:`~Reader.read()`. If no arguments are specified, this
+        is the same as directly iterating over this :py:class:`Reader`
+        instance.
+
+        When `skip_invalid` is set to ``True``, invalid lines will be
+        silently ignored.
+
+        See :py:meth:`~Reader.read()` for a description of the other
+        arguments.
+        """
         try:
             while True:
                 try:
@@ -231,12 +208,6 @@ class Reader(ReaderWriterBase):
                         raise
         except EOFError:
             pass
-
-    def write(self, obj):
-        raise io.UnsupportedOperation("not writable")
-
-    def write_all(self, iterable):
-        raise io.UnsupportedOperation("not writable")
 
     def __iter__(self):
         """
@@ -318,12 +289,6 @@ class Writer(ReaderWriterBase):
         """
         for obj in iterable:
             self.write(obj)
-
-    def read(self, type=None, allow_none=False, skip_empty=False):
-        raise io.UnsupportedOperation("not readable")
-
-    def iter(self, type=None, allow_none=False, skip_empty=False, skip_invalid=False):
-        raise io.UnsupportedOperation("not readable")
 
 
 def open(name, mode="r", **kwargs):
