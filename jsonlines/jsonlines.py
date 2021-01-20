@@ -5,6 +5,7 @@ jsonlines implementation
 import builtins
 import json
 import numbers
+from typing import Union
 
 
 VALID_TYPES = {
@@ -291,7 +292,27 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-def open(name, mode="r", **kwargs):
+try:
+    from typing import Literal, overload
+
+    @overload
+    def open(name, **kwargs) -> Reader:
+        ...
+
+    @overload
+    def open(name, mode: Literal["r"], **kwargs) -> Reader:
+        ...
+
+    @overload
+    def open(name, mode: Literal["w", "a"], **kwargs) -> Writer:
+        ...
+
+
+except ImportError:
+    pass
+
+
+def open(name, mode="r", **kwargs) -> Union[Reader, Writer]:
     """
     Open a jsonlines file for reading or writing.
 
