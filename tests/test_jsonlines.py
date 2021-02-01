@@ -32,6 +32,12 @@ def test_reading_from_iterable():
     assert "wrapping <list at " in repr(reader)
 
 
+def test_reader_rfc7464_text_sequences():
+    fp = io.BytesIO(b'\x1e"a"\x0a\x1e"b"\x0a')
+    with jsonlines.Reader(fp) as reader:
+        assert list(reader) == ["a", "b"]
+
+
 def test_writer_text():
     fp = io.StringIO()
     with jsonlines.Writer(fp) as writer:

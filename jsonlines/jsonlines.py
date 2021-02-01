@@ -159,6 +159,9 @@ class Reader(ReaderWriterBase):
                 )
                 raise exc from orig_exc
 
+        if line.startswith("\x1e"):  # RFC7464 text sequence
+            line = line[1:]
+
         try:
             value = self._loads(line)
         except ValueError as orig_exc:
