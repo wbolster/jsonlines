@@ -344,6 +344,7 @@ def open(name, mode="r", **kwargs) -> Union[Reader, Writer]:
     if mode not in {"r", "w", "a"}:
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
     fp = builtins.open(name, mode=mode + "t", encoding="utf-8")
+    instance: Union[Reader, Writer]
     if mode == "r":
         instance = Reader(fp, **kwargs)
     else:
