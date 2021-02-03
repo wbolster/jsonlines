@@ -306,7 +306,7 @@ class Writer(ReaderWriterBase):
 
 
 @overload
-def open(file: _Openable, mode: Literal["r"], **kwargs) -> Reader:
+def open(file: _Openable, mode: Literal["r"] = "r", **kwargs) -> Reader:
     ...
 
 
