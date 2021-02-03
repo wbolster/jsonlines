@@ -5,8 +5,18 @@ jsonlines implementation
 import builtins
 import json
 import numbers
-from typing import Union
+import os
+import sys
+from typing import Union, overload
 
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
+
+# https://docs.python.org/3/library/functions.html#open
+_Openable = Union[str, bytes, int, os.PathLike]
 
 VALID_TYPES = {
     bool,
@@ -295,27 +305,17 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-try:
-    from typing import Literal, overload
-
-    @overload
-    def open(name, **kwargs) -> Reader:
-        ...
-
-    @overload
-    def open(name, mode: Literal["r"], **kwargs) -> Reader:
-        ...
-
-    @overload
-    def open(name, mode: Literal["w", "a"], **kwargs) -> Writer:
-        ...
+@overload
+def open(file: _Openable, mode: Literal["r"], **kwargs) -> Reader:
+    ...
 
 
-except ImportError:
-    pass
+@overload
+def open(file: _Openable, mode: Literal["w", "a"], **kwargs) -> Writer:
+    ...
 
 
-def open(file, mode="r", **kwargs) -> Union[Reader, Writer]:
+def open(file: _Openable, mode="r", **kwargs) -> Union[Reader, Writer]:
     """
     Open a jsonlines file for reading or writing.
 
