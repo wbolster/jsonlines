@@ -5,7 +5,18 @@ jsonlines implementation
 import builtins
 import json
 import numbers
+import os
+import sys
+from typing import Union, overload
 
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
+
+
+# https://docs.python.org/3/library/functions.html#open
+_Openable = Union[str, bytes, int, os.PathLike]
 
 VALID_TYPES = {
     bool,
@@ -294,7 +305,17 @@ class Writer(ReaderWriterBase):
             self.write(obj)
 
 
-def open(name, mode="r", **kwargs):
+@overload
+def open(file: _Openable, mode: Literal["r"] = "r", **kwargs) -> Reader:
+    ...
+
+
+@overload
+def open(file: _Openable, mode: Literal["w", "a"], **kwargs) -> Writer:
+    ...
+
+
+def open(file: _Openable, mode="r", **kwargs) -> Union[Reader, Writer]:
     """
     Open a jsonlines file for reading or writing.
 
@@ -315,14 +336,15 @@ def open(name, mode="r", **kwargs):
         with jsonlines.open('out.jsonl', mode='w') as writer:
             writer.write(...)
 
-    :param file-like fp: name of the file to open
-    :param str mode: whether to open the file for reading (``r``),
+    :param file: name or ‘path-like object’ of the file to open
+    :param mode: whether to open the file for reading (``r``),
         writing (``w``) or appending (``a``).
     :param **kwargs: additional arguments, forwarded to the reader or writer
     """
     if mode not in {"r", "w", "a"}:
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
-    fp = builtins.open(name, mode=mode + "t", encoding="utf-8")
+    fp = builtins.open(file, mode=mode + "t", encoding="utf-8")
+    instance: Union[Reader, Writer]
     if mode == "r":
         instance = Reader(fp, **kwargs)
     else:
