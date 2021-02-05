@@ -24,7 +24,6 @@ VALID_TYPES = {
     float,
     int,
     list,
-    numbers.Number,
     str,
 }
 
@@ -136,8 +135,7 @@ class Reader(ReaderWriterBase):
 
         The optional `type` argument specifies the expected data type.
         Supported types are ``dict``, ``list``, ``str``, ``int``,
-        ``float``, ``numbers.Number`` (accepts both integers and
-        floats), and ``bool``. When specified, non-conforming lines
+        ``float``, and ``bool``. When specified, non-conforming lines
         result in :py:exc:`InvalidLineError`.
 
         By default, input lines containing ``null`` (in JSON) are
@@ -187,7 +185,7 @@ class Reader(ReaderWriterBase):
 
         if type is not None:
             valid = isinstance(value, type)
-            if type in (int, numbers.Number):
+            if type is int:  # bool is a subclass of int
                 valid = valid and not isinstance(value, bool)
             if not valid:
                 raise InvalidLineError(
