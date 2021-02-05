@@ -4,7 +4,6 @@ jsonlines implementation
 
 import builtins
 import json
-import numbers
 import os
 import sys
 from typing import Union, overload
