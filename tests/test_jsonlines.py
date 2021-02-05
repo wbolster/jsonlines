@@ -130,6 +130,14 @@ def test_typed_reads():
         assert exc.line == '"foo"'
 
 
+def test_typed_read_invalid_type():
+    reader = jsonlines.Reader([])
+    with pytest.raises(ValueError) as excinfo:
+        reader.read(type="nope")
+    exc = excinfo.value
+    assert str(exc) == "invalid type specified"
+
+
 def test_typed_iteration():
     fp = io.StringIO("1\n2\n")
     with jsonlines.Reader(fp) as reader:
