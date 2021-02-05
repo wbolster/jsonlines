@@ -3,19 +3,34 @@ jsonlines implementation
 """
 
 import builtins
+import io
 import json
 import os
 import sys
-from typing import Union, overload
+import types
+import typing
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pragma: no cover
 
-
-# https://docs.python.org/3/library/functions.html#open
-_Openable = Union[str, bytes, int, os.PathLike]
+import attr
 
 VALID_TYPES = {
     bool,
@@ -26,15 +41,42 @@ VALID_TYPES = {
     str,
 }
 
+# https://docs.python.org/3/library/functions.html#open
+Openable = Union[str, bytes, int, os.PathLike]
 
+LoadsCallable = Callable[[Union[str, bytes]], Any]
+DumpsCallable = Callable[[Any], str]
+
+# Currently, JSON structures cannot be typed properly:
+# - https://github.com/python/typing/issues/182
+# - https://github.com/python/mypy/issues/731
+JSONCollection = Union[Dict[str, Any], List[Any]]
+JSONScalar = Union[bool, float, int, str]
+JSONValue = Union[JSONCollection, JSONScalar]
+TJSONValue = TypeVar("TJSONValue", bound=JSONValue)
+
+TRW = TypeVar("TRW", bound="ReaderWriterBase")
+
+default_loads = json.loads
+
+
+def default_dumps(obj: Any) -> str:
+    """
+    Fake dumps() function to use as a default marker.
+    """
+    raise NotImplementedError  # pragma: no cover
+
+
+@attr.s(auto_exc=True, auto_attribs=True)
 class Error(Exception):
     """
     Base error class.
     """
 
-    pass
+    message: str
 
 
+@attr.s(auto_exc=True, auto_attribs=True, init=False)
 class InvalidLineError(Error, ValueError):
     """
     Error raised when an invalid line is encountered.
@@ -51,24 +93,30 @@ class InvalidLineError(Error, ValueError):
     """
 
     #: The invalid line
-    line = None
+    line: Union[str, bytes]
 
     #: The line number
-    lineno = None
+    lineno: int
 
-    def __init__(self, msg, line, lineno):
-        msg = f"{msg} (line {lineno})"
+    def __init__(self, message: str, line: Union[str, bytes], lineno: int) -> None:
         self.line = line.rstrip()
         self.lineno = lineno
-        super().__init__(msg)
+        super().__init__(f"{message} (line {lineno})")
 
 
+@attr.s(auto_attribs=True, repr=False)
 class ReaderWriterBase:
     """
     Base class with shared behaviour for both the reader and writer.
     """
 
-    def close(self):
+    _fp: Union[typing.IO[str], typing.IO[bytes], None] = attr.ib(
+        default=None, init=False
+    )
+    _closed: bool = attr.ib(default=False, init=False)
+    _should_close_fp: bool = attr.ib(default=False, init=False)
+
+    def close(self) -> None:
         """
         Close this reader/writer.
 
@@ -79,27 +127,30 @@ class ReaderWriterBase:
         if self._closed:
             return
         self._closed = True
-        if self._should_close_fp:
+        if self._fp is not None and self._should_close_fp:
             self._fp.close()
 
-    def __repr__(self):
-        name = getattr(self._fp, "name", None)
-        if name:
-            wrapping = repr(name)
-        else:
-            wrapping = "<{} at 0x{:x}>".format(type(self._fp).__name__, id(self._fp))
-        return "<jsonlines.{} at 0x{:x} wrapping {}>".format(
-            type(self).__name__, id(self), wrapping
-        )
+    def __repr__(self) -> str:
+        cls_name = type(self).__name__
+        wrapped = self._repr_for_wrapped()
+        return f"<jsonlines.{cls_name} at 0x{id(self):x} wrapping {wrapped}>"
 
-    def __enter__(self):
+    def _repr_for_wrapped(self) -> str:
+        raise NotImplementedError  # pragma: no cover
+
+    def __enter__(self: TRW) -> TRW:
         return self
 
-    def __exit__(self, *exc_info):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[types.TracebackType],
+    ) -> None:
         self.close()
-        return False
 
 
+@attr.s(auto_attribs=True, repr=False)
 class Reader(ReaderWriterBase):
     """
     Reader for the jsonlines format.
@@ -115,20 +166,88 @@ class Reader(ReaderWriterBase):
 
     Instances are iterable and can be used as a context manager.
 
-    :param file-like iterable: iterable yielding lines as strings
-    :param callable loads: custom json decoder callable
+    :param file_or_iterable: file-like object or iterable yielding lines as
+        strings
+    :param loads: custom json decoder callable
     """
 
-    def __init__(self, iterable, loads=None):
-        self._fp = iterable
-        self._should_close_fp = False
-        self._closed = False
-        if loads is None:
-            loads = json.loads
-        self._loads = loads
-        self._line_iter = enumerate(iterable, 1)
+    _file_or_iterable: Union[
+        typing.IO[str], typing.IO[bytes], Iterable[Union[str, bytes]]
+    ]
+    _line_iter: Iterator[Tuple[int, Union[bytes, str]]] = attr.ib(init=False)
+    _loads: LoadsCallable = attr.ib(default=default_loads, kw_only=True)
 
-    def read(self, type=None, allow_none=False, skip_empty=False):
+    def __attrs_post_init__(self) -> None:
+        if isinstance(self._file_or_iterable, io.IOBase):
+            self._fp = cast(
+                Union[typing.IO[str], typing.IO[bytes]],
+                self._file_or_iterable,
+            )
+
+        self._line_iter = enumerate(self._file_or_iterable, 1)
+
+    # No type specified, None not allowed
+    @overload
+    def read(
+        self,
+        *,
+        type: Literal[None] = ...,
+        allow_none: Literal[False] = ...,
+        skip_empty: bool = ...,
+    ) -> JSONValue:
+        ...  # pragma: no cover
+
+    # No type specified, None allowed
+    @overload
+    def read(
+        self,
+        *,
+        type: Literal[None] = ...,
+        allow_none: Literal[True],
+        skip_empty: bool = ...,
+    ) -> Optional[JSONValue]:
+        ...  # pragma: no cover
+
+    # Type specified, None not allowed
+    @overload
+    def read(
+        self,
+        *,
+        type: Type[TJSONValue],
+        allow_none: Literal[False] = ...,
+        skip_empty: bool = ...,
+    ) -> TJSONValue:
+        ...  # pragma: no cover
+
+    # Type specified, None allowed
+    @overload
+    def read(
+        self,
+        *,
+        type: Type[TJSONValue],
+        allow_none: Literal[True],
+        skip_empty: bool = ...,
+    ) -> Optional[TJSONValue]:
+        ...  # pragma: no cover
+
+    # Generic definition
+    @overload
+    def read(
+        self,
+        *,
+        type: Optional[Type[Any]] = ...,
+        allow_none: bool = ...,
+        skip_empty: bool = ...,
+    ) -> Optional[JSONValue]:
+        ...  # pragma: no cover
+
+    def read(
+        self,
+        *,
+        type: Optional[Type[Any]] = None,
+        allow_none: bool = False,
+        skip_empty: bool = False,
+    ) -> Optional[JSONValue]:
         """
         Read and decode a line.
 
@@ -191,9 +310,75 @@ class Reader(ReaderWriterBase):
                     "line does not match requested type", line, lineno
                 )
 
-        return value
+        return cast(JSONValue, value)
 
-    def iter(self, type=None, allow_none=False, skip_empty=False, skip_invalid=False):
+    # No type specified, None not allowed
+    @overload
+    def iter(
+        self,
+        *,
+        type: Literal[None] = ...,
+        allow_none: Literal[False] = ...,
+        skip_empty: bool = ...,
+        skip_invalid: bool = ...,
+    ) -> Iterator[JSONValue]:
+        ...  # pragma: no cover
+
+    # No type specified, None allowed
+    @overload
+    def iter(
+        self,
+        *,
+        type: Literal[None] = ...,
+        allow_none: Literal[True],
+        skip_empty: bool = ...,
+        skip_invalid: bool = ...,
+    ) -> Iterator[JSONValue]:
+        ...  # pragma: no cover
+
+    # Type specified, None not allowed
+    @overload
+    def iter(
+        self,
+        *,
+        type: Type[TJSONValue],
+        allow_none: Literal[False] = ...,
+        skip_empty: bool = ...,
+        skip_invalid: bool = ...,
+    ) -> Iterator[TJSONValue]:
+        ...  # pragma: no cover
+
+    # Type specified, None allowed
+    @overload
+    def iter(
+        self,
+        *,
+        type: Type[TJSONValue],
+        allow_none: Literal[True],
+        skip_empty: bool = ...,
+        skip_invalid: bool = ...,
+    ) -> Iterator[Optional[TJSONValue]]:
+        ...  # pragma: no cover
+
+    # Generic definition
+    @overload
+    def iter(
+        self,
+        *,
+        type: Optional[Type[TJSONValue]] = ...,
+        allow_none: bool = ...,
+        skip_empty: bool = ...,
+        skip_invalid: bool = ...,
+    ) -> Iterator[Optional[TJSONValue]]:
+        ...  # pragma: no cover
+
+    def iter(
+        self,
+        type: Optional[Type[Any]] = None,
+        allow_none: bool = False,
+        skip_empty: bool = False,
+        skip_invalid: bool = False,
+    ) -> Iterator[Optional[JSONValue]]:
         """
         Iterate over all lines.
 
@@ -220,13 +405,20 @@ class Reader(ReaderWriterBase):
         except EOFError:
             pass
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         """
         See :py:meth:`~Reader.iter()`.
         """
         return self.iter()
 
+    def _repr_for_wrapped(self) -> str:
+        if self._fp is not None:
+            return repr_for_fp(self._fp)
+        class_name = type(self._file_or_iterable).__name__
+        return f"<{class_name} at 0x{id(self._file_or_iterable):x}>"
 
+
+@attr.s(auto_attribs=True, repr=False)
 class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
@@ -248,32 +440,43 @@ class Writer(ReaderWriterBase):
 
     Instances can be used as a context manager.
 
-    :param file-like fp: writable file-like object
-    :param bool compact: whether to use a compact output format
-    :param bool sort_keys: whether to sort object keys
-    :param callable dumps: custom encoder callable
-    :param bool flush: whether to flush the file-like object after
-        writing each line
+    :param fp: writable file-like object
+    :param compact: whether to use a compact output format
+    :param sort_keys: whether to sort object keys
+    :param dumps: custom encoder callable
+    :param flush: whether to flush the file-like object after writing each line
     """
 
-    def __init__(self, fp, compact=False, sort_keys=False, dumps=None, flush=False):
-        self._closed = False
-        try:
-            fp.write("")
-            self._fp_is_binary = False
-        except TypeError:
-            self._fp_is_binary = True
-        if dumps is None:
-            encoder_kwargs = dict(ensure_ascii=False, sort_keys=sort_keys)
-            if compact:
-                encoder_kwargs.update(separators=(",", ":"))
-            dumps = json.JSONEncoder(**encoder_kwargs).encode
-        self._fp = fp
-        self._should_close_fp = False
-        self._dumps = dumps
-        self._flush = flush
+    _fp: Union[typing.IO[str], typing.IO[bytes]] = attr.ib(default=None)
+    _fp_is_binary: bool = attr.ib(default=False, init=False)
+    _compact: bool = attr.ib(default=False, kw_only=True)
+    _sort_keys: bool = attr.ib(default=False, kw_only=True)
+    _flush: bool = attr.ib(default=False, kw_only=True)
+    _dumps: DumpsCallable = attr.ib(default=default_dumps, kw_only=True)
 
-    def write(self, obj):
+    def __attrs_post_init__(self) -> None:
+        if isinstance(self._fp, io.TextIOBase):
+            self._fp_is_binary = False
+        elif isinstance(self._fp, io.IOBase):
+            self._fp_is_binary = True
+        else:
+            try:
+                self._fp.write("")  # type: ignore[arg-type]
+            except TypeError:
+                self._fp_is_binary = True
+            else:
+                self._fp_is_binary = False
+
+        if self._dumps is default_dumps:
+            encoder_kwargs: Dict[str, Any] = dict(
+                ensure_ascii=False,
+                sort_keys=self._sort_keys,
+            )
+            if self._compact:
+                encoder_kwargs.update(separators=(",", ":"))
+            self._dumps = json.JSONEncoder(**encoder_kwargs).encode
+
+    def write(self, obj: Any) -> None:
         """
         Encode and write a single object.
 
@@ -281,18 +484,24 @@ class Writer(ReaderWriterBase):
         """
         if self._closed:
             raise RuntimeError("writer is closed")
+
         line = self._dumps(obj)
+
+        # The .write() takes either str or bytes, but the type checker does not
+        # know that this code always calls it with the right type of argument.
+        fp_write = cast(Any, self._fp.write)
+
         if self._fp_is_binary:
-            line = line.encode("utf-8")
-            self._fp.write(line)
-            self._fp.write(b"\n")
+            fp_write(line.encode("utf-8"))
+            fp_write(b"\n")
         else:
-            self._fp.write(line)
-            self._fp.write("\n")
+            fp_write(line)
+            fp_write("\n")
+
         if self._flush:
             self._fp.flush()
 
-    def write_all(self, iterable):
+    def write_all(self, iterable: Iterable[Any]) -> None:
         """
         Encode and write multiple objects.
 
@@ -301,18 +510,57 @@ class Writer(ReaderWriterBase):
         for obj in iterable:
             self.write(obj)
 
-
-@overload
-def open(file: _Openable, mode: Literal["r"] = "r", **kwargs) -> Reader:
-    ...
+    def _repr_for_wrapped(self) -> str:
+        return repr_for_fp(self._fp)
 
 
 @overload
-def open(file: _Openable, mode: Literal["w", "a"], **kwargs) -> Writer:
-    ...
+def open(
+    file: Openable,
+    mode: Literal["r"] = ...,
+    *,
+    loads: Optional[LoadsCallable] = ...,
+) -> Reader:
+    ...  # pragma: no cover
 
 
-def open(file: _Openable, mode="r", **kwargs) -> Union[Reader, Writer]:
+@overload
+def open(
+    file: Openable,
+    mode: Literal["w", "a"],
+    *,
+    dumps: Optional[DumpsCallable] = ...,
+    compact: Optional[bool] = ...,
+    sort_keys: Optional[bool] = ...,
+    flush: Optional[bool] = ...,
+) -> Writer:
+    ...  # pragma: no cover
+
+
+@overload
+def open(
+    file: Openable,
+    mode: str = ...,
+    *,
+    loads: Optional[LoadsCallable] = ...,
+    dumps: Optional[DumpsCallable] = ...,
+    compact: Optional[bool] = ...,
+    sort_keys: Optional[bool] = ...,
+    flush: Optional[bool] = ...,
+) -> Union[Reader, Writer]:
+    ...  # pragma: no cover
+
+
+def open(
+    file: Openable,
+    mode: str = "r",
+    *,
+    loads: Optional[LoadsCallable] = None,
+    dumps: Optional[DumpsCallable] = None,
+    compact: Optional[bool] = None,
+    sort_keys: Optional[bool] = None,
+    flush: Optional[bool] = None,
+) -> Union[Reader, Writer]:
     """
     Open a jsonlines file for reading or writing.
 
@@ -336,15 +584,31 @@ def open(file: _Openable, mode="r", **kwargs) -> Union[Reader, Writer]:
     :param file: name or ‘path-like object’ of the file to open
     :param mode: whether to open the file for reading (``r``),
         writing (``w``) or appending (``a``).
-    :param **kwargs: additional arguments, forwarded to the reader or writer
     """
     if mode not in {"r", "w", "a"}:
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
+
+    cls = Reader if mode == "r" else Writer
     fp = builtins.open(file, mode=mode + "t", encoding="utf-8")
-    instance: Union[Reader, Writer]
-    if mode == "r":
-        instance = Reader(fp, **kwargs)
-    else:
-        instance = Writer(fp, **kwargs)
+    kwargs = dict(
+        loads=loads,
+        dumps=dumps,
+        compact=compact,
+        sort_keys=sort_keys,
+        flush=flush,
+    )
+    kwargs = {key: value for key, value in kwargs.items() if value is not None}
+    instance: Union[Reader, Writer] = cls(fp, **kwargs)
     instance._should_close_fp = True
     return instance
+
+
+def repr_for_fp(fp: typing.IO[Any]) -> str:
+    """
+    Helper to make a useful repr() for a file-like object.
+    """
+    name = getattr(fp, "name", None)
+    if name is not None:
+        return repr(name)
+    else:
+        return repr(fp)
