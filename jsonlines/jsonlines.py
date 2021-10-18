@@ -297,7 +297,7 @@ class Reader(ReaderWriterBase):
             line = line[1:]
 
         try:
-            value = self._loads(line)
+            value: JSONValue = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
                 f"line contains invalid json: {orig_exc}", line, lineno
@@ -318,7 +318,7 @@ class Reader(ReaderWriterBase):
                     "line does not match requested type", line, lineno
                 )
 
-        return cast(JSONValue, value)
+        return value
 
     # No type specified, None not allowed
     @overload
