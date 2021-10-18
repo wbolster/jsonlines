@@ -2,8 +2,10 @@
 Tests for the jsonlines library.
 """
 
+import codecs
 import collections
 import io
+import json
 import tempfile
 
 import jsonlines
@@ -36,6 +38,48 @@ def test_reader_rfc7464_text_sequences() -> None:
     fp = io.BytesIO(b'\x1e"a"\x0a\x1e"b"\x0a')
     with jsonlines.Reader(fp) as reader:
         assert list(reader) == ["a", "b"]
+
+
+def test_reader_utf8_bom_bytes() -> None:
+    """
+    UTF-8 BOM is ignored, even if it occurs in the middle of a stream.
+    """
+    chunks = [
+        codecs.BOM_UTF8,
+        b"1\n",
+        codecs.BOM_UTF8,
+        b"2\n",
+    ]
+    fp = io.BytesIO(b"".join(chunks))
+    with jsonlines.Reader(fp) as reader:
+        assert list(reader) == [1, 2]
+
+
+def test_reader_utf8_bom_text() -> None:
+    """
+    Text version of ``test_reader_utf8_bom_bytes()``.
+    """
+    chunks = [
+        "1\n",
+        codecs.BOM_UTF8.decode(),
+        "2\n",
+    ]
+    fp = io.StringIO("".join(chunks))
+    with jsonlines.Reader(fp) as reader:
+        assert list(reader) == [1, 2]
+
+
+def test_reader_utf8_bom_bom_bom() -> None:
+    """
+    Too many UTF-8 BOM BOM BOM chars cause BOOM 💥 BOOM.
+    """
+    reader = jsonlines.Reader([codecs.BOM_UTF8.decode() * 3 + "1\n"])
+    with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+        reader.read()
+
+    exc = excinfo.value
+    assert "invalid json" in str(exc)
+    assert isinstance(exc.__cause__, json.JSONDecodeError)
 
 
 def test_writer_text() -> None:
@@ -78,6 +122,7 @@ def test_invalid_lines() -> None:
         exc = excinfo.value
         assert "invalid json" in str(exc)
         assert exc.line == data
+        assert isinstance(exc.__cause__, json.JSONDecodeError)
 
 
 def test_skip_invalid() -> None:
@@ -203,6 +248,18 @@ def test_open_reading() -> None:
             assert list(reader) == [123]
 
 
+def test_open_reading_with_utf8_bom() -> None:
+    """
+    The ``.open()`` helper ignores a UTF-8 BOM.
+    """
+    with tempfile.NamedTemporaryFile("wb") as fp:
+        fp.write(codecs.BOM_UTF8)
+        fp.write(b"123\n")
+        fp.flush()
+        with jsonlines.open(fp.name) as reader:
+            assert list(reader) == [123]
+
+
 def test_open_writing() -> None:
     with tempfile.NamedTemporaryFile("w+b") as fp:
         with jsonlines.open(fp.name, mode="w") as writer:
@@ -224,3 +281,10 @@ def test_open_invalid_mode() -> None:
     with pytest.raises(ValueError) as excinfo:
         jsonlines.open("foo", mode="foo")
     assert "mode" in str(excinfo.value)
+
+
+def test_single_char_stripping() -> None:
+    """ "
+    Sanity check that a helper constant actually contains single-char strings.
+    """
+    assert all(len(s) == 1 for s in jsonlines.jsonlines.SKIPPABLE_SINGLE_INITIAL_CHARS)

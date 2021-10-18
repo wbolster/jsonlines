@@ -3,6 +3,7 @@ jsonlines implementation
 """
 
 import builtins
+import codecs
 import enum
 import io
 import json
@@ -41,6 +42,13 @@ VALID_TYPES = {
     list,
     str,
 }
+
+# Characters to skip at the beginning of a line. Note: at most one such
+# character is skipped per line.
+SKIPPABLE_SINGLE_INITIAL_CHARS = (
+    "\x1e",  # RFC7464 text sequence
+    codecs.BOM_UTF8.decode(),
+)
 
 
 class DumpsResultConversion(enum.Enum):
@@ -293,7 +301,7 @@ class Reader(ReaderWriterBase):
                 )
                 raise exc from orig_exc
 
-        if line.startswith("\x1e"):  # RFC7464 text sequence
+        if line.startswith(SKIPPABLE_SINGLE_INITIAL_CHARS):
             line = line[1:]
 
         try:
@@ -611,7 +619,8 @@ def open(
         raise ValueError("'mode' must be either 'r', 'w', or 'a'")
 
     cls = Reader if mode == "r" else Writer
-    fp = builtins.open(file, mode=mode + "t", encoding="utf-8")
+    encoding = "utf-8-sig" if mode == "r" else "utf-8"
+    fp = builtins.open(file, mode=mode + "t", encoding=encoding)
     kwargs = dict(
         loads=loads,
         dumps=dumps,
