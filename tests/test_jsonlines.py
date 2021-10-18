@@ -133,6 +133,17 @@ def test_skip_invalid() -> None:
     assert next(it) == 34
 
 
+def test_skip_invalid_long_lines() -> None:
+    """
+    A line length limited reader is able to skip over too long lines.
+    """
+    fp = io.StringIO("12\ninvalid\n34")
+    reader = jsonlines.Reader(fp, max_line_length=3)
+    it = reader.iter(skip_invalid=True)
+    assert next(it) == 12
+    assert next(it) == 34
+
+
 def test_empty_strings_in_iterable() -> None:
     input = ["123", "", "456"]
     it = iter(jsonlines.Reader(input))
