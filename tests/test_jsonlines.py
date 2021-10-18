@@ -172,7 +172,21 @@ def test_custom_dumps() -> None:
     writer = jsonlines.Writer(fp, dumps=lambda obj: "oh hai")
     with writer:
         writer.write({})
+
     assert fp.getvalue() == b"oh hai\n"
+
+
+def test_custom_dumps_bytes() -> None:
+    """
+    A custom dump function that returns bytes (e.g. ‘orjson’) should work.
+    """
+
+    fp = io.BytesIO()
+    writer = jsonlines.Writer(fp, dumps=lambda obj: b"some bytes")
+    with writer:
+        writer.write(123)
+
+    assert fp.getvalue() == b"some bytes\n"
 
 
 def test_custom_loads() -> None:

@@ -3,6 +3,7 @@ jsonlines implementation
 """
 
 import builtins
+import enum
 import io
 import json
 import os
@@ -41,11 +42,18 @@ VALID_TYPES = {
     str,
 }
 
+
+class DumpsResultConversion(enum.Enum):
+    LeaveAsIs = enum.auto()
+    EncodeToBytes = enum.auto()
+    DecodeToString = enum.auto()
+
+
 # https://docs.python.org/3/library/functions.html#open
 Openable = Union[str, bytes, int, os.PathLike]
 
 LoadsCallable = Callable[[Union[str, bytes]], Any]
-DumpsCallable = Callable[[Any], str]
+DumpsCallable = Callable[[Any], Union[str, bytes]]
 
 # Currently, JSON structures cannot be typed properly:
 # - https://github.com/python/typing/issues/182
@@ -453,6 +461,9 @@ class Writer(ReaderWriterBase):
     _sort_keys: bool = attr.ib(default=False, kw_only=True)
     _flush: bool = attr.ib(default=False, kw_only=True)
     _dumps: DumpsCallable = attr.ib(default=default_dumps, kw_only=True)
+    _dumps_result_conversion: DumpsResultConversion = attr.ib(
+        default=DumpsResultConversion.LeaveAsIs, init=False
+    )
 
     def __attrs_post_init__(self) -> None:
         if isinstance(self._fp, io.TextIOBase):
@@ -476,6 +487,17 @@ class Writer(ReaderWriterBase):
                 encoder_kwargs.update(separators=(",", ":"))
             self._dumps = json.JSONEncoder(**encoder_kwargs).encode
 
+        # Detect if str-to-bytes conversion (or vice versa) is needed for the
+        # combination of this file-like object and the used dumps() callable.
+        # This avoids checking this for each .write(). Note that this
+        # deliberately does not support ‘dynamic’ return types that depend on
+        # input and dump options, like simplejson on Python 2 in some cases.
+        sample_dumps_result = self._dumps({})
+        if isinstance(sample_dumps_result, str) and self._fp_is_binary:
+            self._dumps_result_conversion = DumpsResultConversion.EncodeToBytes
+        elif isinstance(sample_dumps_result, bytes) and not self._fp_is_binary:
+            self._dumps_result_conversion = DumpsResultConversion.DecodeToString
+
     def write(self, obj: Any) -> None:
         """
         Encode and write a single object.
@@ -487,19 +509,19 @@ class Writer(ReaderWriterBase):
 
         line = self._dumps(obj)
 
-        # The .write() takes either str or bytes, but the type checker does not
-        # know that this code always calls it with the right type of argument.
-        fp_write = cast(Any, self._fp.write)
+        # This handles either str or bytes, but the type checker does not know
+        # that this code always passes the right type of arguments.
+        if self._dumps_result_conversion == DumpsResultConversion.EncodeToBytes:
+            line = line.encode()  # type: ignore[union-attr]
+        elif self._dumps_result_conversion == DumpsResultConversion.DecodeToString:
+            line = line.decode()  # type: ignore[union-attr]
 
-        if self._fp_is_binary:
-            fp_write(line.encode("utf-8"))
-            fp_write(b"\n")
-        else:
-            fp_write(line)
-            fp_write("\n")
+        fp = self._fp
+        fp.write(line)  # type: ignore[arg-type]
+        fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[arg-type]
 
         if self._flush:
-            self._fp.flush()
+            fp.flush()
 
     def write_all(self, iterable: Iterable[Any]) -> None:
         """
