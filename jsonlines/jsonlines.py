@@ -168,11 +168,11 @@ class Reader(ReaderWriterBase):
     an open file or an ``io.TextIO`` instance, but it can also be
     something else as long as it yields strings when iterated over.
 
+    Instances are iterable and can be used as a context manager.
+
     The `loads` argument can be used to replace the standard json
     decoder. If specified, it must be a callable that accepts a
     (unicode) string and returns the decoded object.
-
-    Instances are iterable and can be used as a context manager.
 
     :param file_or_iterable: file-like object or iterable yielding lines as
         strings
@@ -431,6 +431,8 @@ class Writer(ReaderWriterBase):
     """
     Writer for the jsonlines format.
 
+    Instances can be used as a context manager.
+
     The `fp` argument must be a file-like object with a ``.write()``
     method accepting either text (unicode) or bytes.
 
@@ -445,8 +447,6 @@ class Writer(ReaderWriterBase):
 
     When the `flush` argument is set to ``True``, the writer will call
     ``fp.flush()`` after each written line.
-
-    Instances can be used as a context manager.
 
     :param fp: writable file-like object
     :param compact: whether to use a compact output format
