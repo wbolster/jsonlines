@@ -4,8 +4,9 @@ __pycache__/
 
 # Testing
 /.coverage
-/.tox/
+/coverage.xml
 /htmlcov/
+/.tox/
 
 # Packaging
 /.cache/
