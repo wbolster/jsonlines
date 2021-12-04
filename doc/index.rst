@@ -179,6 +179,24 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
+* 3.0.0, released at 2021-12-04
+
+  * add type annotations; adopt mypy in strict mode
+    (`#58 <https://github.com/wbolster/jsonlines/pull/58>`,
+    `#62 <https://github.com/wbolster/jsonlines/pull/62>`)
+
+  * ignore UTF-8 BOM sequences in various scenarios
+    (`#69 <https://github.com/wbolster/jsonlines/pull/69>`)
+
+  * support ``dumps()`` callables returning bytes again
+    (`#64 <https://github.com/wbolster/jsonlines/issues/64>`)
+
+  * add basic support for rfc7464 text sequences
+    (`#61 <https://github.com/wbolster/jsonlines/pull/61>`)
+
+  * drop support for ``numbers.Number`` in ``type=`` arguments
+    (`#63 <https://github.com/wbolster/jsonlines/issues/63>`_)
+
 * 2.0.0, released at 2021-01-04
 
   * drop support for end-of-life Python versions; this package is now
