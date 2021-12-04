@@ -1,6 +1,6 @@
 *(This is the OSI approved 3-clause "New BSD License".)*
 
-Copyright © 2016, Wouter Bolsterlee
+Copyright © 2016, wouter bolsterlee
 
 All rights reserved.
 
