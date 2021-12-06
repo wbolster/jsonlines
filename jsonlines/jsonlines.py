@@ -319,8 +319,9 @@ class Reader(ReaderWriterBase):
 
         if type is not None:
             valid = isinstance(value, type)
-            if type is int:  # bool is a subclass of int
-                valid = valid and not isinstance(value, bool)
+            if type is int and isinstance(value, bool):
+                # isinstance() is not sufficient, since bool is an int subclass
+                valid = False
             if not valid:
                 raise InvalidLineError(
                     "line does not match requested type", line, lineno

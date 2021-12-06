@@ -166,8 +166,15 @@ def test_empty_lines() -> None:
 
 
 def test_typed_reads() -> None:
-    with jsonlines.Reader(io.StringIO('12\n"foo"\n')) as reader:
+    with jsonlines.Reader(io.StringIO('12\ntrue\n"foo"\n')) as reader:
         assert reader.read(type=int) == 12
+
+        with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+            reader.read(type=int)
+        exc = excinfo.value
+        assert "does not match requested type" in str(exc)
+        assert exc.line == 'true'
+
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read(type=float)
         exc = excinfo.value
