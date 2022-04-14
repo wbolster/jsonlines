@@ -223,7 +223,8 @@ def test_custom_dumps() -> None:
     fp = io.BytesIO()
     writer = jsonlines.Writer(fp, dumps=lambda obj: "oh hai")
     with writer:
-        writer.write({})
+        written = writer.write({})
+        assert written == len(b"oh hai\n")
 
     assert fp.getvalue() == b"oh hai\n"
 
@@ -278,9 +279,11 @@ def test_open_writing() -> None:
 def test_open_and_append_writing() -> None:
     with tempfile.NamedTemporaryFile("w+b") as fp:
         with jsonlines.open(fp.name, mode="w") as writer:
-            writer.write(123)
+            written = writer.write(123)
+            assert written == len(str(123)) + 1
         with jsonlines.open(fp.name, mode="a") as writer:
-            writer.write(456)
+            written = writer.write(456)
+            assert written == len(str(456)) + 1
         assert fp.read() == b"123\n456\n"
 
 

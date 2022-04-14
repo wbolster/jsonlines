@@ -507,15 +507,7 @@ class Writer(ReaderWriterBase):
         elif isinstance(sample_dumps_result, bytes) and not self._fp_is_binary:
             self._dumps_result_conversion = DumpsResultConversion.DecodeToString
 
-    def write(self, obj: Any) -> None:
-        """
-        Encode and write a single object.
-
-        :param obj: the object to encode and write
-        """
-        if self._closed:
-            raise RuntimeError("writer is closed")
-
+    def to_line(self, obj: Any) -> Union[str, bytes]:
         line = self._dumps(obj)
 
         # This handles either str or bytes, but the type checker does not know
@@ -525,21 +517,40 @@ class Writer(ReaderWriterBase):
         elif self._dumps_result_conversion == DumpsResultConversion.DecodeToString:
             line = line.decode()  # type: ignore[union-attr]
 
+        return line
+
+    def write_line(self, line: Union[str, bytes]) -> int:
         fp = self._fp
-        fp.write(line)  # type: ignore[arg-type]
-        fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[arg-type]
+        bytes_written = fp.write(line)  # type: ignore[arg-type]
+        bytes_written += fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[arg-type]
 
         if self._flush:
             fp.flush()
 
-    def write_all(self, iterable: Iterable[Any]) -> None:
+        return bytes_written
+
+    def write(self, obj: Any) -> int:
+        """
+        Encode and write a single object.
+
+        :param obj: the object to encode and write
+        """
+        if self._closed:
+            raise RuntimeError("writer is closed")
+
+        line = self.to_line(obj)
+        return self.write_line(line)
+
+    def write_all(self, iterable: Iterable[Any]) -> int:
         """
         Encode and write multiple objects.
 
         :param iterable: an iterable of objects
         """
+        bytes_written = 0
         for obj in iterable:
-            self.write(obj)
+            bytes_written += self.write(obj)
+        return bytes_written
 
     def _repr_for_wrapped(self) -> str:
         return repr_for_fp(self._fp)
