@@ -507,11 +507,12 @@ class Writer(ReaderWriterBase):
         elif isinstance(sample_dumps_result, bytes) and not self._fp_is_binary:
             self._dumps_result_conversion = DumpsResultConversion.DecodeToString
 
-    def write(self, obj: Any) -> None:
+    def write(self, obj: Any) -> int:
         """
         Encode and write a single object.
 
         :param obj: the object to encode and write
+        :return: number of characters or bytes written
         """
         if self._closed:
             raise RuntimeError("writer is closed")
@@ -532,14 +533,16 @@ class Writer(ReaderWriterBase):
         if self._flush:
             fp.flush()
 
-    def write_all(self, iterable: Iterable[Any]) -> None:
+        return len(line) + 1  # including newline
+
+    def write_all(self, iterable: Iterable[Any]) -> int:
         """
         Encode and write multiple objects.
 
         :param iterable: an iterable of objects
+        :return: number of characters or bytes written
         """
-        for obj in iterable:
-            self.write(obj)
+        return sum(self.write(obj) for obj in iterable)
 
     def _repr_for_wrapped(self) -> str:
         return repr_for_fp(self._fp)
