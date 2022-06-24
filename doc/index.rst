@@ -179,6 +179,12 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
+* 3.1.0, not yet released
+
+  * Return number of chars/bytes written by :py:meth:`Writer.write()`
+    and :py:meth:`~Writer.write_all()`
+    (`#73 <https://github.com/wbolster/jsonlines/pull/73>`_)
+
 * 3.0.0, released at 2021-12-04
 
   * add type annotations; adopt mypy in strict mode
