@@ -179,7 +179,7 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
-* 3.1.0, not yet released
+* 3.1.0, released at 2022-07-01
 
   * Return number of chars/bytes written by :py:meth:`Writer.write()`
     and :py:meth:`~Writer.write_all()`
