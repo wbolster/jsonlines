@@ -185,6 +185,10 @@ Version history
     and :py:meth:`~Writer.write_all()`
     (`#73 <https://github.com/wbolster/jsonlines/pull/73>`_)
 
+  * allow ``mode='x'`` in :py:func:`~jsonlines.open()`
+    to open a file for exclusive creation
+    (`#74 <https://github.com/wbolster/jsonlines/issues/74>`_)
+
 * 3.0.0, released at 2021-12-04
 
   * add type annotations; adopt mypy in strict mode
