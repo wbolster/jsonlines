@@ -561,7 +561,7 @@ def open(
 @overload
 def open(
     file: Openable,
-    mode: Literal["w", "a"],
+    mode: Literal["w", "a", "x"],
     *,
     dumps: Optional[DumpsCallable] = ...,
     compact: Optional[bool] = ...,
@@ -619,8 +619,8 @@ def open(
     :param mode: whether to open the file for reading (``r``),
         writing (``w``) or appending (``a``).
     """
-    if mode not in {"r", "w", "a"}:
-        raise ValueError("'mode' must be either 'r', 'w', or 'a'")
+    if mode not in {"r", "w", "a", "x"}:
+        raise ValueError("'mode' must be either 'r', 'w', 'a', or 'x'")
 
     cls = Reader if mode == "r" else Writer
     encoding = "utf-8-sig" if mode == "r" else "utf-8"
