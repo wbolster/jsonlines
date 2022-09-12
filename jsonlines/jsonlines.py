@@ -192,6 +192,7 @@ class Reader(ReaderWriterBase):
     ]
     _line_iter: Iterator[Tuple[int, Union[bytes, str]]] = attr.ib(init=False)
     _loads: LoadsCallable = attr.ib(default=default_loads, kw_only=True)
+    _cls : type = attr.ib(default=json.JSONDecoder, kw_only=True)
 
     def __attrs_post_init__(self) -> None:
         if isinstance(self._file_or_iterable, io.IOBase):
@@ -305,7 +306,10 @@ class Reader(ReaderWriterBase):
             line = line[1:]
 
         try:
-            value: JSONValue = self._loads(line)
+            if self._cls is not None:
+                value: JSONValue = self._loads(line, cls=self._cls)
+            else:
+                value: JSONValue = self._loads(line)
         except ValueError as orig_exc:
             exc = InvalidLineError(
                 f"line contains invalid json: {orig_exc}", line, lineno
@@ -470,6 +474,7 @@ class Writer(ReaderWriterBase):
     _sort_keys: bool = attr.ib(default=False, kw_only=True)
     _flush: bool = attr.ib(default=False, kw_only=True)
     _dumps: DumpsCallable = attr.ib(default=default_dumps, kw_only=True)
+    _cls : type = attr.ib(default=json.JSONEncoder, kw_only=True)
     _dumps_result_conversion: DumpsResultConversion = attr.ib(
         default=DumpsResultConversion.LeaveAsIs, init=False
     )
@@ -494,7 +499,7 @@ class Writer(ReaderWriterBase):
             )
             if self._compact:
                 encoder_kwargs.update(separators=(",", ":"))
-            self._dumps = json.JSONEncoder(**encoder_kwargs).encode
+            self._dumps = self._cls(**encoder_kwargs).encode
 
         # Detect if str-to-bytes conversion (or vice versa) is needed for the
         # combination of this file-like object and the used dumps() callable.
@@ -591,6 +596,7 @@ def open(
     *,
     loads: Optional[LoadsCallable] = None,
     dumps: Optional[DumpsCallable] = None,
+    cls: Optional[type] = None,
     compact: Optional[bool] = None,
     sort_keys: Optional[bool] = None,
     flush: Optional[bool] = None,
@@ -622,18 +628,19 @@ def open(
     if mode not in {"r", "w", "a", "x"}:
         raise ValueError("'mode' must be either 'r', 'w', 'a', or 'x'")
 
-    cls = Reader if mode == "r" else Writer
+    instance_cls = Reader if mode == "r" else Writer
     encoding = "utf-8-sig" if mode == "r" else "utf-8"
     fp = builtins.open(file, mode=mode + "t", encoding=encoding)
     kwargs = dict(
         loads=loads,
         dumps=dumps,
+        cls=cls,
         compact=compact,
         sort_keys=sort_keys,
         flush=flush,
     )
     kwargs = {key: value for key, value in kwargs.items() if value is not None}
-    instance: Union[Reader, Writer] = cls(fp, **kwargs)
+    instance: Union[Reader, Writer] = instance_cls(fp, **kwargs)
     instance._should_close_fp = True
     return instance
 
