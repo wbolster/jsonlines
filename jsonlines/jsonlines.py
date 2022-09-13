@@ -192,7 +192,7 @@ class Reader(ReaderWriterBase):
     ]
     _line_iter: Iterator[Tuple[int, Union[bytes, str]]] = attr.ib(init=False)
     _loads: LoadsCallable = attr.ib(default=default_loads, kw_only=True)
-    _cls : type = attr.ib(default=json.JSONDecoder, kw_only=True)
+    _cls : Type[json.JSONDecoder] = attr.ib(default=json.JSONDecoder, kw_only=True)
 
     def __attrs_post_init__(self) -> None:
         if isinstance(self._file_or_iterable, io.IOBase):
@@ -474,7 +474,7 @@ class Writer(ReaderWriterBase):
     _sort_keys: bool = attr.ib(default=False, kw_only=True)
     _flush: bool = attr.ib(default=False, kw_only=True)
     _dumps: DumpsCallable = attr.ib(default=default_dumps, kw_only=True)
-    _cls : type = attr.ib(default=json.JSONEncoder, kw_only=True)
+    _cls : Type[json.JSONEncoder] = attr.ib(default=json.JSONEncoder, kw_only=True)
     _dumps_result_conversion: DumpsResultConversion = attr.ib(
         default=DumpsResultConversion.LeaveAsIs, init=False
     )
@@ -559,6 +559,7 @@ def open(
     mode: Literal["r"] = ...,
     *,
     loads: Optional[LoadsCallable] = ...,
+    cls: Optional[Type[json.JSONDecoder]] = None,
 ) -> Reader:
     ...  # pragma: no cover
 
@@ -569,6 +570,7 @@ def open(
     mode: Literal["w", "a", "x"],
     *,
     dumps: Optional[DumpsCallable] = ...,
+    cls: Optional[Type[json.JSONEncoder]] = None,
     compact: Optional[bool] = ...,
     sort_keys: Optional[bool] = ...,
     flush: Optional[bool] = ...,
@@ -583,6 +585,7 @@ def open(
     *,
     loads: Optional[LoadsCallable] = ...,
     dumps: Optional[DumpsCallable] = ...,
+    cls: Optional[Union[Type[json.JSONEncoder], Type[json.JSONDecoder]]] = None,
     compact: Optional[bool] = ...,
     sort_keys: Optional[bool] = ...,
     flush: Optional[bool] = ...,
@@ -596,7 +599,7 @@ def open(
     *,
     loads: Optional[LoadsCallable] = None,
     dumps: Optional[DumpsCallable] = None,
-    cls: Optional[type] = None,
+    cls: Optional[Union[Type[json.JSONEncoder], Type[json.JSONDecoder]]] = None,
     compact: Optional[bool] = None,
     sort_keys: Optional[bool] = None,
     flush: Optional[bool] = None,
