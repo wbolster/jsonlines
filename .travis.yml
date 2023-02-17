@@ -9,8 +9,12 @@ language: python
 
 matrix:
   include:
-  - python: "3.9"
+  - python: "3.11"
     env: TOXENV=linters
+  - python: "3.11"
+    env: TOXENV=py311
+  - python: "3.10"
+    env: TOXENV=py310
   - python: "3.9"
     env: TOXENV=py39
   - python: "3.8"
