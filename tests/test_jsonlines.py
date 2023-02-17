@@ -173,7 +173,7 @@ def test_typed_reads() -> None:
             reader.read(type=int)
         exc = excinfo.value
         assert "does not match requested type" in str(exc)
-        assert exc.line == 'true'
+        assert exc.line == "true"
 
         with pytest.raises(jsonlines.InvalidLineError) as excinfo:
             reader.read(type=float)

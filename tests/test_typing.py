@@ -20,7 +20,6 @@ import jsonlines
 
 
 def something_with_reader() -> None:
-
     reader: jsonlines.Reader
     reader = jsonlines.Reader(io.StringIO())
     reader = jsonlines.Reader(io.BytesIO())
