@@ -179,6 +179,12 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
+* 4.0.0, released at ...
+
+  * drop support for end-of-life Python versions; this package is now
+    Python 3.7+ only.
+    (`#80 <https://github.com/wbolster/jsonlines/pull/80>`_)
+
 * 3.1.0, released at 2022-07-01
 
   * Return number of chars/bytes written by :py:meth:`Writer.write()`
