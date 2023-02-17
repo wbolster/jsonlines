@@ -617,7 +617,7 @@ def open(
 
     :param file: name or ‘path-like object’ of the file to open
     :param mode: whether to open the file for reading (``r``),
-        writing (``w``), appending (``a``) or exclusive creation (``x``).
+        writing (``w``), appending (``a``), or exclusive creation (``x``).
     """
     if mode not in {"r", "w", "a", "x"}:
         raise ValueError("'mode' must be either 'r', 'w', 'a', or 'x'")
