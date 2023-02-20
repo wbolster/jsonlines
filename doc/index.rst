@@ -181,6 +181,9 @@ Version history
 
 * 4.0.0, released at ...
 
+  * use ‘orjson’ or ‘ujson’ for reading if available
+    (`#81 <https://github.com/wbolster/jsonlines/pull/81>`_)
+
   * drop support for end-of-life Python versions; this package is now
     Python 3.7+ only.
     (`#80 <https://github.com/wbolster/jsonlines/pull/80>`_)
