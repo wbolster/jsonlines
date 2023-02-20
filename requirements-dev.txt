@@ -1,6 +1,9 @@
 black
 flake8
 mypy
+orjson
 pytest>=3
 pytest-cov
 sphinx
+types-ujson
+ujson

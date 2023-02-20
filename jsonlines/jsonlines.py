@@ -34,6 +34,19 @@ else:
 
 import attr
 
+orjson: Optional[types.ModuleType]
+try:
+    import orjson
+except ImportError:
+    orjson = None
+
+ujson: Optional[types.ModuleType]
+try:
+    import ujson
+except ImportError:
+    ujson = None
+
+
 VALID_TYPES = {
     bool,
     dict,
@@ -73,12 +86,22 @@ TJSONValue = TypeVar("TJSONValue", bound=JSONValue)
 
 TRW = TypeVar("TRW", bound="ReaderWriterBase")
 
-default_loads = json.loads
+# Default to using the fastest JSON library for reading, falling back to the
+# standard library (always available) if none are installed.
+if orjson is not None:
+    default_loads = orjson.loads
+elif ujson is not None:
+    default_loads = ujson.loads
+else:
+    default_loads = json.loads
 
 
+# For writing, use the stdlib. Other packages may be faster but their behaviour
+# (supported types etc.) and output (whitespace etc.) are not the same as the
+# stdlib json module, so this should be opt-in via the ‘dumps=’ arg.
 def default_dumps(obj: Any) -> str:
     """
-    Fake dumps() function to use as a default marker.
+    Fake ``dumps()`` function to use as a default marker.
     """
     raise NotImplementedError  # pragma: no cover
 

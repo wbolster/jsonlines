@@ -16,6 +16,19 @@ SAMPLE_BYTES = b'{"a": 1}\n{"b": 2}\n'
 SAMPLE_TEXT = SAMPLE_BYTES.decode("utf-8")
 
 
+def is_json_decode_error(exc: object) -> bool:
+    if type(exc).__module__ == "ujson":
+        # The ujson package has its own ujson.JSONDecodeError; because of the
+        # line above this function also works if it's not installed.
+        import ujson
+
+        return isinstance(exc, ujson.JSONDecodeError)
+    else:
+        # Otherwise, this should be a stdlib json.JSONDecodeError, which also
+        # works for orjson since orjson.JSONDecodeError inherits from it.
+        return isinstance(exc, json.JSONDecodeError)
+
+
 def test_reader() -> None:
     fp = io.BytesIO(SAMPLE_BYTES)
     with jsonlines.Reader(fp) as reader:
@@ -79,7 +92,7 @@ def test_reader_utf8_bom_bom_bom() -> None:
 
     exc = excinfo.value
     assert "invalid json" in str(exc)
-    assert isinstance(exc.__cause__, json.JSONDecodeError)
+    assert is_json_decode_error(exc.__cause__)
 
 
 def test_writer_text() -> None:
@@ -122,7 +135,7 @@ def test_invalid_lines() -> None:
         exc = excinfo.value
         assert "invalid json" in str(exc)
         assert exc.line == data
-        assert isinstance(exc.__cause__, json.JSONDecodeError)
+        assert is_json_decode_error(exc.__cause__)
 
 
 def test_skip_invalid() -> None:
