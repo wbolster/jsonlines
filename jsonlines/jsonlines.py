@@ -596,12 +596,12 @@ def open(
     """
     Open a jsonlines file for reading or writing.
 
-    This is a convenience function that opens a file, and wraps it in
-    either a :py:class:`Reader` or :py:class:`Writer` instance,
-    depending on the specified `mode`.
+    This is a convenience function to open a file and wrap it in either a
+    :py:class:`Reader` or :py:class:`Writer` instance, depending on the
+    specified `mode`.
 
-    Any additional keyword arguments will be passed on to the reader and
-    writer: see their documentation for available options.
+    Additional keyword arguments will be passed on to the reader and writer;
+    see their documentation for available options.
 
     The resulting reader or writer must be closed after use by the
     caller, which will also close the opened file.  This can be done by
