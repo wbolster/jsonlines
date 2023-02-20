@@ -488,13 +488,11 @@ class Writer(ReaderWriterBase):
                 self._fp_is_binary = False
 
         if self._dumps is default_dumps:
-            encoder_kwargs: Dict[str, Any] = dict(
+            self._dumps = json.JSONEncoder(
                 ensure_ascii=False,
+                separators=(",", ":") if self._compact else (", ", ": "),
                 sort_keys=self._sort_keys,
-            )
-            if self._compact:
-                encoder_kwargs.update(separators=(",", ":"))
-            self._dumps = json.JSONEncoder(**encoder_kwargs).encode
+            ).encode
 
         # Detect if str-to-bytes conversion (or vice versa) is needed for the
         # combination of this file-like object and the used dumps() callable.
