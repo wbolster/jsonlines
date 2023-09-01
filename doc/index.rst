@@ -189,14 +189,15 @@ The source code and issue tracker for this package can be found on GitHub:
 Version history
 ===============
 
-* 4.0.0, released at ...
+* 4.0.0, released at 2023-09-01
 
   * use ‘orjson’ or ‘ujson’ for reading if available
     (`#81 <https://github.com/wbolster/jsonlines/pull/81>`_)
 
   * drop support for end-of-life Python versions; this package is now
-    Python 3.7+ only.
-    (`#80 <https://github.com/wbolster/jsonlines/pull/80>`_)
+    Python 3.8+ only.
+    (`#80 <https://github.com/wbolster/jsonlines/pull/80>`_,
+    `#80 <https://github.com/wbolster/jsonlines/pull/85>`_)
 
 * 3.1.0, released at 2022-07-01
 
