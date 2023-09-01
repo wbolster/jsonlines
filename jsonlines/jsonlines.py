@@ -8,7 +8,6 @@ import enum
 import io
 import json
 import os
-import sys
 import types
 import typing
 from typing import (
@@ -18,6 +17,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Tuple,
     Type,
@@ -26,11 +26,6 @@ from typing import (
     cast,
     overload,
 )
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal  # pragma: no cover
 
 import attr
 
