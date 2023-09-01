@@ -504,7 +504,7 @@ class Writer(ReaderWriterBase):
             self._fp_is_binary = True
         else:
             try:
-                self._fp.write("")  # type: ignore[arg-type]
+                self._fp.write("")  # type: ignore[call-overload]
             except TypeError:
                 self._fp_is_binary = True
             else:
@@ -549,7 +549,7 @@ class Writer(ReaderWriterBase):
 
         fp = self._fp
         fp.write(line)  # type: ignore[arg-type]
-        fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[arg-type]
+        fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[call-overload]
 
         if self._flush:
             fp.flush()
