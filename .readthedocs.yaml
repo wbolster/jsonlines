@@ -6,5 +6,9 @@ build:
   tools:
     python: "3.11"
 
+python:
+  install:
+    - path: .
+
 sphinx:
   configuration: doc/conf.py
