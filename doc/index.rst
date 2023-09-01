@@ -54,6 +54,13 @@ Features
   * allows complete control over encoding using a custom ``dumps``
     callable
 
+.. _gotchas:
+
+* Prevents gotchas when handling supported inputs
+
+  * uses standard-compliant line breaking, unlike `str.splitlines`_
+
+  .. _str.splitlines: https://docs.python.org/3/library/stdtypes.html#str.splitlines
 
 Installation
 ============
