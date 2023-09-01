@@ -22,6 +22,16 @@ using this format do not have to reinvent the wheel.
 Features
 ========
 
+* Sensible behaviour for most use cases
+
+  * transparently handles ``str`` and ``bytes``, both for input and output
+  * supports multiple JSON libraries, e.g. ``json`` (standard library), ``orjson``, ``ujson``
+  * transparently handles UTF-8 BOM (if present)
+  * useful error messages
+  * prevents gotchas, e.g. uses standard-compliant line breaking, unlike `str.splitlines`_
+
+  .. _str.splitlines: https://docs.python.org/3/library/stdtypes.html#str.splitlines
+
 * Convenient :py:func:`~jsonlines.open()` function
 
   * makes simple cases trivial to write
@@ -54,13 +64,6 @@ Features
   * allows complete control over encoding using a custom ``dumps``
     callable
 
-.. _gotchas:
-
-* Prevents gotchas when handling supported inputs
-
-  * uses standard-compliant line breaking, unlike `str.splitlines`_
-
-  .. _str.splitlines: https://docs.python.org/3/library/stdtypes.html#str.splitlines
 
 Installation
 ============
