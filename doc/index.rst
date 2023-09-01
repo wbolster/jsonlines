@@ -62,7 +62,7 @@ Installation
 
   pip install jsonlines
 
-The supported Python versions are 3.7+.
+The supported Python versions are 3.8+.
 
 
 User guide
