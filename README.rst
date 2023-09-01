@@ -1,6 +1,3 @@
-.. image:: https://travis-ci.org/wbolster/jsonlines.svg?branch=master
-   :target: https://travis-ci.org/wbolster/jsonlines
-
 .. image:: https://pepy.tech/badge/jsonlines
    :target: https://pepy.tech/project/jsonlines
 
