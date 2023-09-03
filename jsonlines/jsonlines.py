@@ -12,6 +12,7 @@ import types
 import typing
 from typing import (
     Any,
+    AnyStr,
     Callable,
     Dict,
     Iterable,
@@ -200,9 +201,26 @@ class Reader(ReaderWriterBase):
     decoder. If specified, it must be a callable that accepts a
     (unicode) string and returns the decoded object.
 
-    :param file_or_iterable: file-like object or iterable yielding lines as
-        strings
+    The `max_line_length` argument limits the maximum line length. If
+    specified, this prevents reading and parsing of too large values.
+    When reading from an input file that has a ``.readline()`` method,
+    that will be used. For custom iterables, it is not possible to
+    limit the size of yielded items, but the limit will still prevent
+    JSON parsing of too large lines. Note that the limit applies per
+    line, not to the total amount of data.
+
+    .. warning::
+
+        Use `max_line_length` as a safety measure for untrusted input:
+        without a limit, (potentially malicious) large input without
+        newlines will be read into memory in its entirety, and parsed
+        afterwards. This could quickly exhaust memory and other system
+        resources.
+
+    :param file_or_iterable: file-like object or iterable yielding
+        lines as strings
     :param loads: custom json decoder callable
+    :param max_line_length: the maximum line length to read/parse
     """
 
     _file_or_iterable: Union[
@@ -210,6 +228,7 @@ class Reader(ReaderWriterBase):
     ]
     _line_iter: Iterator[Tuple[int, Union[bytes, str]]] = attr.ib(init=False)
     _loads: LoadsCallable = attr.ib(default=default_loads, kw_only=True)
+    _max_line_length: Optional[int] = attr.ib(default=None, kw_only=True)
 
     def __attrs_post_init__(self) -> None:
         if isinstance(self._file_or_iterable, io.IOBase):
@@ -218,7 +237,18 @@ class Reader(ReaderWriterBase):
                 self._file_or_iterable,
             )
 
-        self._line_iter = enumerate(self._file_or_iterable, 1)
+        iterable: Iterable[Union[str, bytes]]
+        if (
+            self._fp is not None
+            and hasattr(self._fp, "readline")
+            and self._max_line_length is not None
+        ):
+            self._line_iter = ReadlineIterator(
+                self._fp,  # type: ignore[misc]
+                max_line_length=self._max_line_length,
+            )
+        else:
+            self._line_iter = enumerate(self._file_or_iterable, 1)
 
     # No type specified, None not allowed
     @overload
@@ -318,6 +348,10 @@ class Reader(ReaderWriterBase):
                     f"line is not valid utf-8: {orig_exc}", line, lineno
                 )
                 raise exc from orig_exc
+
+        if self._max_line_length is not None and len(line) > self._max_line_length:
+            # TODO: add tests for this
+            raise InvalidLineError("line too long", line, lineno)
 
         if line.startswith(SKIPPABLE_SINGLE_INITIAL_CHARS):
             line = line[1:]
@@ -663,3 +697,56 @@ def repr_for_fp(fp: typing.IO[Any]) -> str:
         return repr(name)
     else:
         return repr(fp)
+
+
+@attr.s(auto_attribs=True)
+class ReadlineIterator(typing.Iterator[Tuple[int, AnyStr]]):
+    """
+    Iterate over file-like objects using ``.readline()`` with a maximum length.
+
+    This is useful to avoid reading too large values into memory. A too long
+    line causes ``__next__()`` to raise an error. However, if called again
+    afterwards, it reads past that line and continues with the next line.
+
+    This behaviour makes this iterator ‘special’: it can continue after an
+    exception. In normal scenarios, this exception will reach the application,
+    which will then abort reading from the file, and the iterator will never
+    continue. However, ``Reader.iter(skip_invalid=True)`` needs to continue
+    afterwards: it should skip over too long lines, but the next line may be
+    fine.
+
+    # TODO: is this desirable behaviour at all? maybe a too long line is just
+    # bad bad bad and ``skip_invalid`` should not silently ignore it?
+    """
+    # Note: this code is implemented as a class instead of a simpler generator
+    # function, because the latter cannot continue after raising an exception.
+
+    fp: typing.IO[AnyStr]
+    max_line_length: int
+    at_line_boundary: bool = True
+    lineno: int = 1
+
+    def __next__(self) -> Tuple[int, Union[AnyStr]]:
+        """
+        Read the next line.
+        """
+        # If previously interrupted, fast-forward to a line boundary.
+        while not self.at_line_boundary:
+            line = self.fp.readline(self.max_line_length)
+            if not line:
+                raise StopIteration
+            self.at_line_boundary = line[-1] in (
+                "\n",  # str
+                0x0A,  # bytes
+            )
+
+        line = self.fp.readline(self.max_line_length + 1)
+        if not line:
+            raise StopIteration
+
+        self.lineno += 1
+        if len(line) > self.max_line_length:
+            self.at_line_boundary = False
+            raise InvalidLineError("line too long", line, self.lineno)
+
+        return self.lineno, line
