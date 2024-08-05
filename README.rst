@@ -15,7 +15,7 @@ jsonlines
 and ndjson_ data.
 
 .. _jsonlines: http://jsonlines.org/
-.. _ndjson: http://ndjson.org/
+.. _ndjson: https://github.com/ndjson/ndjson-spec
 
 * Documentation: https://jsonlines.readthedocs.io/
 
