@@ -8,7 +8,7 @@ jsonlines
 and ndjson_ data.
 
 .. _jsonlines: http://jsonlines.org/
-.. _ndjson: http://ndjson.org/
+.. _ndjson: https://github.com/ndjson/ndjson-spec
 
 This data format is straight-forward: it is simply one valid JSON
 value per line, encoded using UTF-8. While code to consume and create
