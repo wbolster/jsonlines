@@ -6,11 +6,11 @@ import codecs
 import collections
 import io
 import json
+import os
 import tempfile
 
 import jsonlines
 import pytest
-
 
 SAMPLE_BYTES = b'{"a": 1}\n{"b": 2}\n'
 SAMPLE_TEXT = SAMPLE_BYTES.decode("utf-8")
@@ -311,3 +311,24 @@ def test_single_char_stripping() -> None:
     Sanity check that a helper constant actually contains single-char strings.
     """
     assert all(len(s) == 1 for s in jsonlines.jsonlines.SKIPPABLE_SINGLE_INITIAL_CHARS)
+
+
+def test_open_closes_file_when_encoder_initialization_fails() -> None:
+    def broken_dumps(obj: object) -> str:
+        raise ValueError("encoder initialization failed")
+
+    with tempfile.TemporaryFile() as source:
+        descriptor = os.dup(source.fileno())
+        try:
+            with pytest.raises(
+                ValueError, match="encoder initialization failed"
+            ) as exc:
+                jsonlines.open(descriptor, mode="w", dumps=broken_dumps)
+            assert str(exc.value) == "encoder initialization failed"
+            with pytest.raises(OSError):
+                os.fstat(descriptor)
+        finally:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
