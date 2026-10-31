@@ -178,6 +178,46 @@ def test_empty_lines() -> None:
         assert list(reader.iter(skip_empty=True)) == [1, 2]
 
 
+@pytest.mark.parametrize("prefix", ["\ufeff", "\x1e"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_skip_empty_after_initial_marker(prefix: str, binary: bool) -> None:
+    lines = [prefix + "\n", prefix + " \t\n", "1\n"]
+    data = [line.encode() for line in lines] if binary else lines
+    reader = jsonlines.Reader(data)
+    assert list(reader.iter(skip_empty=True)) == [1]
+
+
+@pytest.mark.parametrize("prefix", ["\ufeff", "\x1e"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_marker_only_lines_reach_eof(prefix: str, binary: bool) -> None:
+    lines = [prefix, prefix + " \t\n"]
+    data = [line.encode() for line in lines] if binary else lines
+    reader = jsonlines.Reader(data)
+    with pytest.raises(EOFError):
+        reader.read(skip_empty=True)
+
+
+@pytest.mark.parametrize("prefix", ["\ufeff", "\x1e"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_marker_empty_line_preserves_error_lineno(prefix: str, binary: bool) -> None:
+    lines = [prefix + "\n", "invalid\n"]
+    data = [line.encode() for line in lines] if binary else lines
+    reader = jsonlines.Reader(data)
+    with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+        reader.read(skip_empty=True)
+    assert excinfo.value.lineno == 2
+
+
+@pytest.mark.parametrize("prefix", ["\ufeff", "\x1e"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_marker_empty_line_stays_invalid_by_default(prefix: str, binary: bool) -> None:
+    line = prefix + "\n"
+    reader = jsonlines.Reader([line.encode() if binary else line])
+    with pytest.raises(jsonlines.InvalidLineError) as excinfo:
+        reader.read()
+    assert excinfo.value.lineno == 1
+
+
 def test_typed_reads() -> None:
     with jsonlines.Reader(io.StringIO('12\ntrue\n"foo"\n')) as reader:
         assert reader.read(type=int) == 12

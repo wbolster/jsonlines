@@ -303,24 +303,25 @@ class Reader(ReaderWriterBase):
         if type is not None and type not in VALID_TYPES:
             raise ValueError("invalid type specified")
 
-        try:
-            lineno, line = next(self._line_iter)
-            while skip_empty and not line.rstrip():
-                lineno, line = next(self._line_iter)
-        except StopIteration:
-            raise EOFError from None
-
-        if isinstance(line, bytes):
+        while True:
             try:
-                line = line.decode("utf-8")
-            except UnicodeDecodeError as orig_exc:
-                exc = InvalidLineError(
-                    f"line is not valid utf-8: {orig_exc}", line, lineno
-                )
-                raise exc from orig_exc
+                lineno, line = next(self._line_iter)
+            except StopIteration:
+                raise EOFError from None
 
-        if line.startswith(SKIPPABLE_SINGLE_INITIAL_CHARS):
-            line = line[1:]
+            if isinstance(line, bytes):
+                try:
+                    line = line.decode("utf-8")
+                except UnicodeDecodeError as orig_exc:
+                    exc = InvalidLineError(
+                        f"line is not valid utf-8: {orig_exc}", line, lineno
+                    )
+                    raise exc from orig_exc
+
+            if line.startswith(SKIPPABLE_SINGLE_INITIAL_CHARS):
+                line = line[1:]
+            if not (skip_empty and not line.rstrip()):
+                break
 
         try:
             value: JSONValue = self._loads(line)
