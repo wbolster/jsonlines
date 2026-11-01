@@ -649,7 +649,11 @@ def open(
         flush=flush,
     )
     kwargs = {key: value for key, value in kwargs.items() if value is not None}
-    instance: Union[Reader, Writer] = cls(fp, **kwargs)
+    try:
+        instance: Union[Reader, Writer] = cls(fp, **kwargs)
+    except BaseException:
+        fp.close()
+        raise
     instance._should_close_fp = True
     return instance
 
