@@ -59,6 +59,10 @@ SKIPPABLE_SINGLE_INITIAL_CHARS = (
 )
 
 
+class _EndOfInput(EOFError):
+    """Clean exhaustion, distinct from an input stream or decoder failure."""
+
+
 class DumpsResultConversion(enum.Enum):
     LeaveAsIs = enum.auto()
     EncodeToBytes = enum.auto()
@@ -308,7 +312,7 @@ class Reader(ReaderWriterBase):
             while skip_empty and not line.rstrip():
                 lineno, line = next(self._line_iter)
         except StopIteration:
-            raise EOFError from None
+            raise _EndOfInput from None
 
         if isinstance(line, bytes):
             try:
@@ -437,7 +441,7 @@ class Reader(ReaderWriterBase):
                 except InvalidLineError:
                     if not skip_invalid:
                         raise
-        except EOFError:
+        except _EndOfInput:
             pass
 
     def __iter__(self) -> Iterator[Any]:
