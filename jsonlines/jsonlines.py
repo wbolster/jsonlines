@@ -543,8 +543,19 @@ class Writer(ReaderWriterBase):
             line = line.decode()  # type: ignore[union-attr]
 
         fp = self._fp
-        fp.write(line)  # type: ignore[arg-type]
-        fp.write(b"\n" if self._fp_is_binary else "\n")  # type: ignore[call-overload]
+        for chunk in (line, b"\n" if self._fp_is_binary else "\n"):
+            while True:
+                written = fp.write(chunk)  # type: ignore[arg-type]
+                if written is None:
+                    # Custom sinks historically need not return a count.
+                    if isinstance(fp, io.RawIOBase):
+                        raise BlockingIOError("write() made no progress")
+                    break
+                if written >= len(chunk):
+                    break
+                if written <= 0:
+                    raise BlockingIOError("write() made no progress")
+                chunk = chunk[written:]
 
         if self._flush:
             fp.flush()

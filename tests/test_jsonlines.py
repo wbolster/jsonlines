@@ -7,6 +7,7 @@ import collections
 import io
 import json
 import tempfile
+from typing import Any, List, Optional
 
 import jsonlines
 import pytest
@@ -113,6 +114,114 @@ def test_writer_binary() -> None:
             ]
         )
     assert fp.getvalue() == SAMPLE_BYTES
+
+
+def test_writer_short_text_writes() -> None:
+    class ShortWriter(io.StringIO):
+        def write(self, text: str) -> int:
+            return super().write(text[:2])
+
+    fp = ShortWriter()
+    with jsonlines.Writer(fp) as writer:
+        assert writer.write("é🐈") == len('"é🐈"\n')
+        assert writer.write_all([{"a": 1}, {"b": 2}]) == len(SAMPLE_TEXT)
+
+    assert fp.getvalue() == '"é🐈"\n' + SAMPLE_TEXT
+    assert not fp.closed
+
+
+def test_writer_short_binary_writes() -> None:
+    class ShortWriter(io.RawIOBase):
+        def __init__(self) -> None:
+            super().__init__()
+            self.output = bytearray()
+            self.flushes: List[bytes] = []
+
+        def writable(self) -> bool:
+            return True
+
+        def write(self, data: Any) -> int:
+            chunk = data[:2]
+            self.output.extend(chunk)
+            return len(chunk)
+
+        def flush(self) -> None:
+            self.flushes.append(bytes(self.output))
+
+    fp = ShortWriter()
+    first_line = '"é🐈"\n'.encode()
+    with jsonlines.Writer(fp, flush=True) as writer:  # type: ignore[arg-type]
+        assert writer.write("é🐈") == len(first_line)
+        assert writer.write_all([{"a": 1}, {"b": 2}]) == len(SAMPLE_BYTES)
+
+    assert bytes(fp.output) == first_line + SAMPLE_BYTES
+    assert fp.flushes == [
+        first_line,
+        first_line + b'{"a": 1}\n',
+        first_line + SAMPLE_BYTES,
+    ]
+    assert not fp.closed
+
+
+@pytest.mark.parametrize("result", [0, None])
+@pytest.mark.parametrize("fail_on", [1, 2])
+def test_writer_no_progress(result: Optional[int], fail_on: int) -> None:
+    class BlockedWriter(io.RawIOBase):
+        def __init__(self) -> None:
+            super().__init__()
+            self.writes: List[bytes] = []
+            self.flushed = False
+
+        def write(self, data: Any) -> Optional[int]:
+            self.writes.append(data)
+            return result if len(self.writes) == fail_on else len(data)
+
+        def flush(self) -> None:
+            self.flushed = True
+
+    fp = BlockedWriter()
+    writer = jsonlines.Writer(fp, flush=True)  # type: ignore[arg-type]
+    with pytest.raises(BlockingIOError):
+        writer.write({})
+    assert fp.writes == [b"{}", b"\n"][:fail_on]
+    assert not fp.flushed
+
+
+def test_writer_write_error() -> None:
+    error = OSError("stream failed")
+
+    class FailingWriter(io.BytesIO):
+        flushed = False
+
+        def write(self, data: Any) -> int:
+            if data == b"\n":
+                raise error
+            return super().write(data)
+
+        def flush(self) -> None:
+            self.flushed = True
+
+    fp = FailingWriter()
+    writer = jsonlines.Writer(fp, flush=True)
+    with pytest.raises(OSError) as excinfo:
+        writer.write({})
+    assert excinfo.value is error
+    assert fp.getvalue() == b"{}"
+    assert not fp.flushed
+
+
+def test_writer_sink_without_return_value() -> None:
+    class Sink:
+        def __init__(self) -> None:
+            self.output = ""
+
+        def write(self, text: str) -> None:
+            self.output += text
+
+    fp = Sink()
+    writer = jsonlines.Writer(fp)  # type: ignore[arg-type]
+    assert writer.write({"a": 1}) == len('{"a": 1}\n')
+    assert fp.output == '{"a": 1}\n'
 
 
 def test_closing() -> None:
